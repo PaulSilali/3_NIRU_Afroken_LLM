@@ -1,0 +1,130 @@
+{
+  "home": {
+    "hero": {
+      "title": "AfroKen — Government Services Msee",
+      "subtitle": "Pata help na government services kwa English, Kiswahili, ama Sheng",
+      "cta": "Tuanze Kumangana"
+    },
+    "services": {
+      "title": "Unaweza nisaidie na nini leo?",
+      "nhif": {
+        "title": "NHIF Zile Vitu",
+        "description": "Kujisajili insurance, claims, na ku-contribute"
+      },
+      "kra": {
+        "title": "KRA Tax Vitu",
+        "description": "Tax returns, PIN, na ku-comply"
+      },
+      "huduma": {
+        "title": "Huduma Centre",
+        "description": "Book appointment ya ID, passport, na zingine"
+      }
+    },
+    "features": {
+      "title": "Vile AfroKen inakusort",
+      "instant": {
+        "title": "Instant Answers",
+        "description": "Pata majibu haraka sana kwa maswali yako"
+      },
+      "verified": {
+        "title": "Info Correct",
+        "description": "Majibu yote yanatoka kwa official government docs"
+      },
+      "multilingual": {
+        "title": "Language Yako",
+        "description": "Chat kwa English, Kiswahili, ama Sheng"
+      }
+    }
+  },
+  "chat": {
+    "input": {
+      "placeholder": "Type swali yako hapa...",
+      "send": "Send",
+      "voiceInput": "Sauti input"
+    },
+    "typing": "Ana-type...",
+    "error": "Imefail ku-send message. Jaribu tena.",
+    "citations": "Sources",
+    "viewSource": "Check source",
+    "rating": {
+      "helpful": "Inasaidia",
+      "notHelpful": "Haisaidii"
+    },
+    "actions": {
+      "book": "Book Appointment",
+      "link": "Fungua Link",
+      "form": "Jaza Form"
+    },
+    "examples": {
+      "nhif": [
+        "Niji-register vipi NHIF?",
+        "NHIF contribution ni ngapi?",
+        "Nisheck vipi NHIF balance yangu?"
+      ],
+      "kra": [
+        "Ni-file vipi tax returns?",
+        "Nipate vipi KRA PIN?",
+        "Tax deadline ni lini?"
+      ],
+      "huduma": [
+        "Ni-book vipi Huduma Centre appointment?",
+        "Ninahitaji papers gani kwa ID renewal?",
+        "Huduma Centre iko wapi nearby?"
+      ]
+    }
+  },
+  "dashboard": {
+    "title": "Service Dashboard",
+    "metrics": {
+      "totalQueries": "Jumla ya Questions",
+      "satisfaction": "Satisfaction Rate",
+      "avgResponse": "Average Response Time",
+      "escalations": "Escalations"
+    },
+    "charts": {
+      "topIntents": "Top Citizen Intents",
+      "countyHeatmap": "Distribution ya Queries kwa County",
+      "satisfaction": "Satisfaction Trends"
+    },
+    "export": "Export Data"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": {
+      "title": "Language",
+      "description": "Chagua language unayopenda"
+    },
+    "theme": {
+      "title": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "accessibility": {
+      "title": "Accessibility",
+      "highContrast": "High Contrast Mode",
+      "largeText": "Large Text"
+    }
+  },
+  "footer": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms ya Service",
+    "accessibility": "Accessibility",
+    "openData": "Open Data",
+    "copyright": "© 2025 AfroKen. All rights reserved."
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "dashboard": "Dashboard",
+    "settings": "Settings"
+  },
+  "common": {
+    "loading": "Ina-load...",
+    "error": "Kuna hitilafu",
+    "close": "Funga",
+    "cancel": "Cancel",
+    "save": "Save",
+    "back": "Rudi"
+  }
+}

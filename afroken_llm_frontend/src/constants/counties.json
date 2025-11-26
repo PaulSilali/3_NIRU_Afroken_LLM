@@ -1,0 +1,58 @@
+[
+  {
+    "countyName": "Nairobi",
+    "queries": 4532,
+    "escalations": 89,
+    "satisfaction": 87,
+    "coordinates": [-1.286389, 36.817223]
+  },
+  {
+    "countyName": "Mombasa",
+    "queries": 2341,
+    "escalations": 45,
+    "satisfaction": 85,
+    "coordinates": [-4.043477, 39.668206]
+  },
+  {
+    "countyName": "Kisumu",
+    "queries": 1876,
+    "escalations": 32,
+    "satisfaction": 89,
+    "coordinates": [-0.091702, 34.767956]
+  },
+  {
+    "countyName": "Nakuru",
+    "queries": 1654,
+    "escalations": 28,
+    "satisfaction": 86,
+    "coordinates": [-0.303099, 36.080026]
+  },
+  {
+    "countyName": "Kiambu",
+    "queries": 1543,
+    "escalations": 25,
+    "satisfaction": 88,
+    "coordinates": [-1.171936, 36.835688]
+  },
+  {
+    "countyName": "Machakos",
+    "queries": 987,
+    "escalations": 18,
+    "satisfaction": 84,
+    "coordinates": [-1.517435, 37.263428]
+  },
+  {
+    "countyName": "Meru",
+    "queries": 876,
+    "escalations": 15,
+    "satisfaction": 90,
+    "coordinates": [0.351949, 37.648933]
+  },
+  {
+    "countyName": "Uasin Gishu",
+    "queries": 765,
+    "escalations": 12,
+    "satisfaction": 91,
+    "coordinates": [0.520568, 35.269776]
+  }
+]

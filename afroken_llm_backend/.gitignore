@@ -1,0 +1,37 @@
+# Python / FastAPI backend ignores
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# IDE / tooling
+.vscode/
+.idea/
+*.iml
+
+# Byte-compiled / logs
+*.log
+
+# Coverage / test artifacts
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local environment & secrets
+.env
+.env.*
+*.env.local
+
+# Docker
+*.pid
+
+

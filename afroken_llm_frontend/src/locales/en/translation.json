@@ -1,0 +1,130 @@
+{
+  "home": {
+    "hero": {
+      "title": "AfroKen — Citizen Service Copilot",
+      "subtitle": "Get instant help with government services in English, Kiswahili, or Sheng",
+      "cta": "Start Conversation"
+    },
+    "services": {
+      "title": "What can I help you with today?",
+      "nhif": {
+        "title": "NHIF Services",
+        "description": "Health insurance registration, claims, and contributions"
+      },
+      "kra": {
+        "title": "KRA Tax Services",
+        "description": "Tax returns, PIN registration, and compliance"
+      },
+      "huduma": {
+        "title": "Huduma Centre",
+        "description": "Book appointments for IDs, passports, and more"
+      }
+    },
+    "features": {
+      "title": "How AfroKen helps you",
+      "instant": {
+        "title": "Instant Answers",
+        "description": "Get immediate responses to your government service questions"
+      },
+      "verified": {
+        "title": "Verified Information",
+        "description": "All answers are sourced from official government documents"
+      },
+      "multilingual": {
+        "title": "Your Language",
+        "description": "Chat in English, Kiswahili, or Sheng"
+      }
+    }
+  },
+  "chat": {
+    "input": {
+      "placeholder": "Type your question here...",
+      "send": "Send",
+      "voiceInput": "Voice input"
+    },
+    "typing": "Typing...",
+    "error": "Failed to send message. Please try again.",
+    "citations": "Sources",
+    "viewSource": "View source",
+    "rating": {
+      "helpful": "Helpful",
+      "notHelpful": "Not helpful"
+    },
+    "actions": {
+      "book": "Book Appointment",
+      "link": "Open Link",
+      "form": "Fill Form"
+    },
+    "examples": {
+      "nhif": [
+        "How do I register for NHIF?",
+        "What are the NHIF contribution rates?",
+        "How do I check my NHIF balance?"
+      ],
+      "kra": [
+        "How do I file my tax returns?",
+        "How do I get a KRA PIN?",
+        "What are the tax deadlines?"
+      ],
+      "huduma": [
+        "How do I book a Huduma Centre appointment?",
+        "What documents do I need for ID renewal?",
+        "Where is the nearest Huduma Centre?"
+      ]
+    }
+  },
+  "dashboard": {
+    "title": "Service Dashboard",
+    "metrics": {
+      "totalQueries": "Total Queries",
+      "satisfaction": "Satisfaction Rate",
+      "avgResponse": "Avg Response Time",
+      "escalations": "Escalations"
+    },
+    "charts": {
+      "topIntents": "Top Citizen Intents",
+      "countyHeatmap": "Query Distribution by County",
+      "satisfaction": "Satisfaction Trends"
+    },
+    "export": "Export Data"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": {
+      "title": "Language",
+      "description": "Choose your preferred language"
+    },
+    "theme": {
+      "title": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "accessibility": {
+      "title": "Accessibility",
+      "highContrast": "High Contrast Mode",
+      "largeText": "Large Text"
+    }
+  },
+  "footer": {
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "accessibility": "Accessibility",
+    "openData": "Open Data",
+    "copyright": "© 2025 AfroKen. All rights reserved."
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "dashboard": "Dashboard",
+    "settings": "Settings"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "back": "Back"
+  }
+}

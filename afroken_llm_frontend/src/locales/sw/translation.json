@@ -1,0 +1,130 @@
+{
+  "home": {
+    "hero": {
+      "title": "AfroKen — Msaidizi wa Huduma za Raia",
+      "subtitle": "Pata msaada wa haraka na huduma za serikali kwa Kiingereza, Kiswahili, au Sheng",
+      "cta": "Anza Mazungumzo"
+    },
+    "services": {
+      "title": "Naweza kukusaidia na nini leo?",
+      "nhif": {
+        "title": "Huduma za NHIF",
+        "description": "Usajili wa bima ya afya, madai, na michango"
+      },
+      "kra": {
+        "title": "Huduma za KRA",
+        "description": "Kodi, usajili wa PIN, na ufuatiliaji"
+      },
+      "huduma": {
+        "title": "Kituo cha Huduma",
+        "description": "Weka miadi kwa vitambulisho, pasipoti, na zaidi"
+      }
+    },
+    "features": {
+      "title": "Jinsi AfroKen inavyokusaidia",
+      "instant": {
+        "title": "Majibu ya Haraka",
+        "description": "Pata majibu ya haraka kwa maswali yako ya huduma za serikali"
+      },
+      "verified": {
+        "title": "Taarifa Zilizothibitishwa",
+        "description": "Majibu yote yanatoka kwa hati rasmi za serikali"
+      },
+      "multilingual": {
+        "title": "Lugha Yako",
+        "description": "Zungumza kwa Kiingereza, Kiswahili, au Sheng"
+      }
+    }
+  },
+  "chat": {
+    "input": {
+      "placeholder": "Andika swali lako hapa...",
+      "send": "Tuma",
+      "voiceInput": "Ingiza kwa sauti"
+    },
+    "typing": "Inaandika...",
+    "error": "Imeshindikana kutuma ujumbe. Tafadhali jaribu tena.",
+    "citations": "Vyanzo",
+    "viewSource": "Angalia chanzo",
+    "rating": {
+      "helpful": "Inasaidia",
+      "notHelpful": "Haisaidii"
+    },
+    "actions": {
+      "book": "Weka Miadi",
+      "link": "Fungua Kiungo",
+      "form": "Jaza Fomu"
+    },
+    "examples": {
+      "nhif": [
+        "Ninajisajili vipi NHIF?",
+        "Ni viwango gani vya michango ya NHIF?",
+        "Ninaangalia vipi salio langu la NHIF?"
+      ],
+      "kra": [
+        "Ninafaili vipi kodi zangu?",
+        "Ninapata vipi PIN ya KRA?",
+        "Ni muda gani wa mwisho wa kodi?"
+      ],
+      "huduma": [
+        "Ninaweka vipi miadi ya Kituo cha Huduma?",
+        "Ninahitaji hati gani kwa kufanya upya kitambulisho?",
+        "Kituo cha Huduma kiko wapi karibu?"
+      ]
+    }
+  },
+  "dashboard": {
+    "title": "Dashibodi ya Huduma",
+    "metrics": {
+      "totalQueries": "Jumla ya Maswali",
+      "satisfaction": "Kiwango cha Kuridhika",
+      "avgResponse": "Muda wa Wastani wa Majibu",
+      "escalations": "Kupandisha"
+    },
+    "charts": {
+      "topIntents": "Nia Kuu za Raia",
+      "countyHeatmap": "Usambazaji wa Maswali kwa Kaunti",
+      "satisfaction": "Mwenendo wa Kuridhika"
+    },
+    "export": "Hamisha Data"
+  },
+  "settings": {
+    "title": "Mipangilio",
+    "language": {
+      "title": "Lugha",
+      "description": "Chagua lugha unayopendelea"
+    },
+    "theme": {
+      "title": "Mandhari",
+      "light": "Mwanga",
+      "dark": "Giza",
+      "system": "Mfumo"
+    },
+    "accessibility": {
+      "title": "Ufikiaji",
+      "highContrast": "Hali ya Tofauti Kubwa",
+      "largeText": "Maandishi Makubwa"
+    }
+  },
+  "footer": {
+    "privacy": "Sera ya Faragha",
+    "terms": "Masharti ya Huduma",
+    "accessibility": "Ufikiaji",
+    "openData": "Data Wazi",
+    "copyright": "© 2025 AfroKen. Haki zote zimehifadhiwa."
+  },
+  "nav": {
+    "home": "Nyumbani",
+    "about": "Kuhusu",
+    "dashboard": "Dashibodi",
+    "settings": "Mipangilio"
+  },
+  "common": {
+    "loading": "Inapakia...",
+    "error": "Hitilafu imetokea",
+    "close": "Funga",
+    "cancel": "Ghairi",
+    "save": "Hifadhi",
+    "back": "Rudi"
+  }
+}

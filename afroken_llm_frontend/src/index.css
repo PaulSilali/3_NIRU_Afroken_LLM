@@ -1,0 +1,235 @@
+/* Leaflet CSS for maps */
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Modern Kenya-inspired color palette */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    /* Primary: Enhanced Kenya green */
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 142 71% 55%;
+
+    /* Secondary: Warm earthy tone */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    /* Accent: Vibrant golden */
+    --accent: 26 90% 62%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 142 71% 45%;
+
+    --radius: 1rem;
+
+    /* Enhanced semantic colors */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+    
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    /* Chat bubble colors */
+    --user-bubble: 142 71% 45%;
+    --user-bubble-foreground: 0 0% 100%;
+    --bot-bubble: 220 14% 96%;
+    --bot-bubble-foreground: 240 10% 3.9%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 142 71% 55%;
+
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+
+    --accent: 26 90% 62%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 142 71% 45%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 10%;
+    
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --user-bubble: 142 71% 45%;
+    --user-bubble-foreground: 0 0% 100%;
+    --bot-bubble: 240 4% 16%;
+    --bot-bubble-foreground: 0 0% 98%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-secondary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  /* Chat animations */
+  .message-enter {
+    animation: slideInUp 0.3s ease-out;
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Pulse animation for typing indicator */
+  .typing-dot {
+    animation: typingPulse 1.4s infinite;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes typingPulse {
+    0%, 60%, 100% {
+      opacity: 0.3;
+      transform: scale(0.8);
+    }
+    30% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Smooth transitions */
+  .smooth-transition {
+    transition: var(--transition-smooth);
+  }
+
+  /* Focus visible styles */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* Modern utility classes */
+  .glass-effect {
+    @apply backdrop-blur-2xl bg-background/85 border border-border/40 shadow-lg;
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--primary)) 100%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%);
+  }
+
+  .shadow-glow {
+    box-shadow: 0 8px 40px hsl(var(--primary) / 0.35), 0 2px 8px hsl(var(--primary) / 0.2);
+  }
+
+  .shadow-elegant {
+    box-shadow: 0 20px 50px -12px hsl(var(--foreground) / 0.15);
+  }
+
+  .hover-lift {
+    @apply transition-all duration-500 ease-out;
+  }
+  
+  .hover-lift:hover {
+    @apply -translate-y-2 shadow-2xl;
+    box-shadow: 0 20px 60px hsl(var(--primary) / 0.25);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 50%, hsl(var(--accent)) 100%);
+    @apply bg-clip-text text-transparent;
+  }
+
+  .border-gradient {
+    border: 2px solid transparent;
+    background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+                linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) border-box;
+  }
+}
