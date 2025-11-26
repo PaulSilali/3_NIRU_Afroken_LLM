@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ThumbsUp, ThumbsDown, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { Message } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   const { t } = useTranslation();
   const [showCitations, setShowCitations] = useState(false);
   const [feedback, setFeedback] = useState<'helpful' | 'not_helpful' | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
@@ -44,28 +45,44 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 message-enter`}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+      animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className={`mb-4 flex ${isUser ? 'justify-end' : 'justify-start'} message-enter`}
     >
       <div
-        className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 ${
-          isUser
-            ? 'bg-userBubble text-userBubble-foreground'
-            : 'bg-botBubble text-botBubble-foreground border border-border'
+        className={`flex max-w-[90%] items-end gap-2 md:max-w-[75%] ${
+          isUser ? 'flex-row-reverse' : 'flex-row'
         }`}
-        role="article"
-        aria-label={`${isUser ? 'Your' : 'AfroKen'} message`}
       >
-        {!isUser && (
-          <div className="text-xs font-semibold mb-2 text-muted-foreground">AfroKen</div>
-        )}
+        {/* Avatar */}
+        <div
+          className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold shadow-sm ${
+            isUser ? 'bg-userBubble text-userBubble-foreground' : 'bg-muted text-foreground'
+          }`}
+          aria-hidden="true"
+        >
+          {isUser ? 'You' : 'A'}
+        </div>
 
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+        {/* Bubble */}
+        <div
+          className={`w-full rounded-2xl px-4 py-3 ${
+            isUser
+              ? 'bg-userBubble text-userBubble-foreground rounded-br-md'
+              : 'bg-botBubble text-botBubble-foreground border border-border rounded-bl-md'
+          }`}
+          role="article"
+          aria-label={`${isUser ? 'Your' : 'AfroKen'} message`}
+        >
+          {!isUser && (
+            <div className="mb-2 text-xs font-semibold text-muted-foreground">AfroKen</div>
+          )}
+
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
 
         {/* Citations */}
-        {!isUser && message.citations && message.citations.length > 0 && (
+          {!isUser && message.citations && message.citations.length > 0 && (
           <div className="mt-3 pt-3 border-t border-border/50">
             <button
               onClick={() => setShowCitations(!showCitations)}
@@ -112,10 +129,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               </div>
             )}
           </div>
-        )}
+          )}
 
         {/* Actions */}
-        {!isUser && message.actions && message.actions.length > 0 && (
+          {!isUser && message.actions && message.actions.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
             {message.actions.map((action, index) => (
               <Button
@@ -130,10 +147,10 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               </Button>
             ))}
           </div>
-        )}
+          )}
 
         {/* Feedback */}
-        {!isUser && (
+          {!isUser && (
           <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{t('chat.rating.helpful')}?</span>
             <Button
@@ -163,13 +180,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               <ThumbsDown className="w-3 h-3" />
             </Button>
           </div>
-        )}
+          )}
 
-        <div className="text-xs text-muted-foreground/60 mt-2">
-          {new Date(message.timestamp).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+          <div className="mt-2 text-xs text-muted-foreground/60">
+            {new Date(message.timestamp).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </div>
         </div>
       </div>
     </motion.div>

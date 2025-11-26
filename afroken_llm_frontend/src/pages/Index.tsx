@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
-import { MessageSquare, Shield, Globe2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
+import { MessageSquare, Shield, Globe2, Users, ThumbsUp, MapPin } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ServiceCard } from '@/components/ServiceCard';
 import { ChatWindow } from '@/components/Chat/ChatWindow';
+import { ChatLauncher } from '@/components/Chat/ChatLauncher';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SERVICES } from '@/constants/services';
@@ -13,7 +15,9 @@ import heroBackground from '@/assets/hero-background.jpg';
 
 export default function Index() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { setIsOpen, setCurrentService } = useChatStore();
+  const shouldReduceMotion = useReducedMotion();
 
   const handleStartChat = (serviceId?: string) => {
     if (serviceId) {
@@ -52,19 +56,19 @@ export default function Index() {
             className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60"
             style={{ backgroundImage: `url(${heroBackground})` }}
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-background/95 via-background/90 to-primary/20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-background/98 md:from-background/95 via-background/92 to-primary/20" />
           
-          <div className="container mx-auto px-4 py-24 md:py-40 relative z-10">
+          <div className="container mx-auto px-4 py-16 md:py-20 relative z-10">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
               className="text-center max-w-4xl mx-auto"
             >
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                initial={shouldReduceMotion ? false : { scale: 0.9, opacity: 0 }}
+                animate={shouldReduceMotion ? undefined : { scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3, ease: 'easeOut', delay: 0.15 }}
                 className="inline-block mb-6 px-4 py-2 rounded-full glass-effect"
               >
                 <span className="text-sm font-medium text-primary">
@@ -81,35 +85,67 @@ export default function Index() {
               </p>
               
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: 'easeOut', delay: 0.25 }}
+                className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
               >
                 <Button
                   size="lg"
                   onClick={() => handleStartChat()}
-                  className="gap-2 text-lg px-10 py-6 shadow-glow hover-lift focus-ring font-semibold"
+                  className="kenya-cta gap-2 px-8 py-5 text-lg font-semibold shadow-glow focus-ring transform transition-transform duration-300 ease-out hover:scale-105"
                 >
-                  <MessageSquare className="w-6 h-6" aria-hidden="true" />
+                  <MessageSquare className="h-6 w-6" aria-hidden="true" />
                   {t('home.hero.cta')}
                 </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => navigate('/services')}
+                  className="gap-2 px-8 py-5 text-lg font-semibold bg-background/70 backdrop-blur-sm hover:bg-background focus-ring"
+                >
+                  {t('home.services.title')}
+                </Button>
+              </motion.div>
+
+              {/* Trust stats strip */}
+              <motion.div
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: 'easeOut', delay: 0.35 }}
+                className="mt-8 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground md:flex-row md:gap-6"
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  <span>Serving 10K+ monthly queries</span>
+                </div>
+                <div className="hidden h-4 w-px bg-border md:block" aria-hidden="true" />
+                <div className="flex items-center gap-2">
+                  <ThumbsUp className="h-4 w-4 text-success" />
+                  <span>92% satisfaction score</span>
+                </div>
+                <div className="hidden h-4 w-px bg-border md:block" aria-hidden="true" />
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-accent" />
+                  <span>Across all 47 counties</span>
+                </div>
               </motion.div>
             </motion.div>
           </div>
           
           {/* Decorative elements */}
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+          <div className="absolute top-20 left-10 w-60 h-60 bg-primary/6 rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-80 h-80 bg-accent/6 rounded-full blur-3xl" />
         </section>
 
         {/* Services Section */}
-        <section className="container mx-auto px-4 py-20 md:py-24">
+        <section className="container mx-auto px-4 py-16 md:py-20">
           <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+            whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="text-center mb-12"
           >
             <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
               {t('home.services.title')}
@@ -123,10 +159,10 @@ export default function Index() {
             {SERVICES.map((service, index) => (
               <motion.div
                 key={service.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 30 }}
+                whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.15 }}
+                transition={{ duration: 0.35, ease: 'easeOut', delay: index * 0.12 }}
                 whileHover={{ scale: 1.02 }}
               >
                 <ServiceCard
@@ -139,14 +175,14 @@ export default function Index() {
         </section>
 
         {/* Features Section */}
-        <section className="py-20 md:py-24 bg-muted/30">
+        <section className="py-16 md:py-20 bg-muted/30">
           <div className="container mx-auto px-4">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+              whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-16"
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="text-center mb-12"
             >
               <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
                 {t('home.features.title')}
@@ -160,10 +196,10 @@ export default function Index() {
               {features.map((feature, index) => (
                 <motion.div
                   key={feature.title}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 30 }}
+                  whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.15 }}
+                  transition={{ duration: 0.35, ease: 'easeOut', delay: index * 0.12 }}
                 >
                   <Card className="h-full smooth-transition hover-lift group relative overflow-hidden border-2">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -189,7 +225,7 @@ export default function Index() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-20 md:py-24 relative overflow-hidden">
+        <section className="py-16 md:py-20 relative overflow-hidden">
           <div className="absolute inset-0 gradient-primary opacity-10" />
           <div className="container mx-auto px-4 relative">
             <motion.div
@@ -219,6 +255,7 @@ export default function Index() {
 
       <Footer />
       <ChatWindow />
+      <ChatLauncher />
     </div>
   );
 }

@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { getMetrics } from '@/lib/api';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -16,6 +17,9 @@ import { toast } from 'sonner';
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  const shouldReduceMotion = useReducedMotion();
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
+  const [countyFilter, setCountyFilter] = useState<string>('all');
   
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['metrics'],
@@ -49,15 +53,15 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1 bg-gradient-hero">
         <div className="container mx-auto px-4 py-8">
           <div className="space-y-8">
             {/* Header */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
               className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
             >
               <div>
@@ -74,9 +78,45 @@ export default function Dashboard() {
               </Button>
             </motion.div>
 
+          {/* Filters */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Time range:</span>
+                <select
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs focus-ring"
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value as any)}
+                >
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d">Last 30 days</option>
+                  <option value="90d">Last 90 days</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium">County:</span>
+                <select
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs focus-ring"
+                  value={countyFilter}
+                  onChange={(e) => setCountyFilter(e.target.value)}
+                >
+                  <option value="all">All counties</option>
+                  {metrics?.countySummary.map((c) => (
+                    <option key={c.countyName} value={c.countyName}>
+                      {c.countyName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Filters are illustrative in this demo; data represents simulated usage.
+            </p>
+          </div>
+
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <MetricCard
+              <MetricCard
               title={t('dashboard.metrics.totalQueries')}
               value={metrics?.totalQueries.toLocaleString() || '0'}
               change={12}
@@ -118,7 +158,9 @@ export default function Dashboard() {
           <Card className="border-2 shadow-lg">
             <CardHeader>
               <CardTitle className="font-display text-2xl">{t('dashboard.charts.topIntents')}</CardTitle>
-              <CardDescription className="text-base">Most common citizen questions and requests</CardDescription>
+              <CardDescription className="text-base">
+                Most common citizen questions and requests (total query counts over the selected period)
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer

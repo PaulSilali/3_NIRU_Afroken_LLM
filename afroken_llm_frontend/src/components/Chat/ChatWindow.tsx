@@ -97,7 +97,7 @@ export function ChatWindow({ initialService }: ChatWindowProps) {
           aria-labelledby="chat-title"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border bg-primary text-primary-foreground">
+          <div className="flex items-center justify-between border-b border-border bg-primary text-primary-foreground p-4">
             <div>
               <h2 id="chat-title" className="text-lg font-semibold">
                 AfroKen
@@ -119,25 +119,54 @@ export function ChatWindow({ initialService }: ChatWindowProps) {
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-1" role="log" aria-live="polite" aria-label="Chat messages">
               {messages.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">{t('home.services.title')}</p>
+                <div className="py-8 text-center">
+                  <p className="mb-2 text-sm font-medium text-foreground">
+                    Hi, I&apos;m AfroKen. Ask me about NHIF, KRA, Huduma, or other government services.
+                  </p>
+                  <p className="mb-4 text-xs text-muted-foreground">
+                    Choose a quick question below or type your own in the box.
+                  </p>
+
+                  <div className="mx-auto flex max-w-md flex-wrap justify-center gap-2">
+                    {['How do I check my NHIF status?', 'How can I get a KRA PIN?', 'How do I book a Huduma Centre appointment?'].map(
+                      (example) => (
+                        <Button
+                          key={example}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs focus-ring"
+                          onClick={() => handleSendMessage(example)}
+                        >
+                          {example}
+                        </Button>
+                      ),
+                    )}
+                  </div>
+
                   {currentService && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">{t(`home.services.${currentService}.title`)}</p>
+                    <div className="mt-6 space-y-2">
+                      <p className="text-xs font-medium text-foreground">
+                        {t(`home.services.${currentService}.title`)}
+                      </p>
                       <div className="space-y-1">
-                        {(t(`chat.examples.${currentService}`, { returnObjects: true }) as string[]).map(
-                          (example: string, index: number) => (
+                        {(() => {
+                          const raw = t(`chat.examples.${currentService}`, {
+                            returnObjects: true,
+                            defaultValue: [],
+                          });
+                          const examples = Array.isArray(raw) ? raw : [];
+                          return examples.map((example: string, index: number) => (
                             <Button
                               key={index}
                               variant="outline"
                               size="sm"
-                              className="w-full text-left justify-start text-xs focus-ring"
+                              className="w-full justify-start text-left text-xs focus-ring"
                               onClick={() => handleSendMessage(example)}
                             >
                               {example}
                             </Button>
-                          )
-                        )}
+                          ));
+                        })()}
                       </div>
                     </div>
                   )}

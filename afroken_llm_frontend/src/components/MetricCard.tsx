@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
@@ -35,14 +35,15 @@ export function MetricCard({
   };
 
   const TrendIcon = trendIcons[trend];
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay }}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+      animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: 'easeOut', delay }}
     >
-      <Card className="smooth-transition hover-lift border-2 relative overflow-hidden group">
+      <Card className="relative overflow-hidden border-2 shadow-lg transition-shadow duration-300 hover:shadow-glow">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <CardContent className="p-6 relative">

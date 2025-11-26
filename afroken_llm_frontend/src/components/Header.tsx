@@ -1,70 +1,106 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, X, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NavLink } from '@/components/NavLink';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function Header() {
   const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onScroll = () => {
+      setIsScrolled(window.scrollY > 12);
+    };
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
-    <header className="border-b border-border/50 glass-effect sticky top-0 z-50 shadow-elegant">
-      <nav className="container mx-auto px-4 h-20 flex items-center justify-between" role="navigation" aria-label="Main navigation">
+    <header
+      className={`sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl transition-all duration-300 ${
+        isScrolled ? 'shadow-elegant bg-background/95' : ''
+      }`}
+    >
+      <nav
+        className={`container mx-auto flex items-center justify-between px-4 transition-all duration-300 ${
+          isScrolled ? 'h-16' : 'h-20'
+        }`}
+        role="navigation"
+        aria-label="Main navigation"
+      >
         <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center gap-3 focus-ring rounded group" aria-label="AfroKen home">
-            <div className="w-11 h-11 rounded-2xl gradient-primary flex items-center justify-center shadow-lg group-hover:shadow-glow group-hover:scale-110 transition-all duration-300">
-              <span className="text-white font-bold text-2xl">A</span>
+          <Link
+            to="/"
+            className="group flex items-center gap-3 rounded-full px-2 py-1 focus-ring"
+            aria-label="AfroKen home"
+          >
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg transition-all duration-300 group-hover:shadow-glow group-hover:scale-110">
+              <span className="font-display text-2xl font-bold text-white">A</span>
+              <Sparkles className="absolute -right-1 -top-1 h-4 w-4 text-amber-300 drop-shadow-sm" />
             </div>
-            <span className="font-display font-bold text-2xl hidden sm:inline bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">AfroKen</span>
+            <div className="flex flex-col">
+              <span className="hidden font-display text-xl font-semibold tracking-tight text-foreground sm:inline">
+                AfroKen
+              </span>
+              <span className="hidden text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80 sm:inline">
+                Citizen Service Copilot
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden h-8 w-px bg-border/60 md:block" aria-hidden="true" />
+
+          <div className="hidden items-center gap-2 rounded-full bg-muted/40 px-2 py-1 shadow-sm ring-1 ring-border/40 md:flex">
             <NavLink
               to="/"
               end
-              className="text-sm font-medium text-muted-foreground hover:text-primary smooth-transition focus-ring px-3 py-2 rounded-lg hover:bg-primary/5"
-              activeClassName="text-primary bg-primary/10"
+              className="smooth-transition relative rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-background hover:text-primary focus-ring"
+              activeClassName="bg-background text-primary shadow-xs after:absolute after:left-4 after:right-4 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-primary"
             >
               {t('nav.home')}
             </NavLink>
             <NavLink
               to="/services"
-              className="text-sm font-medium text-muted-foreground hover:text-primary smooth-transition focus-ring px-3 py-2 rounded-lg hover:bg-primary/5"
-              activeClassName="text-primary bg-primary/10"
+              className="smooth-transition relative rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-background hover:text-primary focus-ring"
+              activeClassName="bg-background text-primary shadow-xs after:absolute after:left-4 after:right-4 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-primary"
             >
               Services
             </NavLink>
             <NavLink
               to="/about"
-              className="text-sm font-medium text-muted-foreground hover:text-primary smooth-transition focus-ring px-3 py-2 rounded-lg hover:bg-primary/5"
-              activeClassName="text-primary bg-primary/10"
+              className="smooth-transition relative rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-background hover:text-primary focus-ring"
+              activeClassName="bg-background text-primary shadow-xs after:absolute after:left-4 after:right-4 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-primary"
             >
               {t('nav.about')}
             </NavLink>
             <NavLink
               to="/dashboard"
-              className="text-sm font-medium text-muted-foreground hover:text-primary smooth-transition focus-ring px-3 py-2 rounded-lg hover:bg-primary/5"
-              activeClassName="text-primary bg-primary/10"
+              className="smooth-transition relative rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-background hover:text-primary focus-ring"
+              activeClassName="bg-background text-primary shadow-xs after:absolute after:left-4 after:right-4 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-primary"
             >
               {t('nav.dashboard')}
             </NavLink>
             <NavLink
               to="/settings"
-              className="text-sm font-medium text-muted-foreground hover:text-primary smooth-transition focus-ring px-3 py-2 rounded-lg hover:bg-primary/5"
-              activeClassName="text-primary bg-primary/10"
+              className="smooth-transition relative rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-background hover:text-primary focus-ring"
+              activeClassName="bg-background text-primary shadow-xs after:absolute after:left-4 after:right-4 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-primary"
             >
               {t('nav.settings')}
             </NavLink>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
           <LanguageSwitcher />
-          
+
           {/* Mobile menu button */}
           <Button
             variant="ghost"
@@ -79,54 +115,58 @@ export function Header() {
         </div>
       </nav>
 
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border bg-background" role="navigation" aria-label="Mobile navigation">
-            <div className="container mx-auto px-4 py-4 flex flex-col gap-4">
-              <NavLink
-                to="/"
-                end
-                className="text-sm font-medium text-muted-foreground hover:text-foreground smooth-transition focus-ring"
-                activeClassName="text-foreground"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('nav.home')}
-              </NavLink>
-              <NavLink
-                to="/services"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground smooth-transition focus-ring"
-                activeClassName="text-foreground"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Services
-              </NavLink>
-              <NavLink
-                to="/about"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground smooth-transition focus-ring"
-                activeClassName="text-foreground"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('nav.about')}
-              </NavLink>
-              <NavLink
-                to="/dashboard"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground smooth-transition focus-ring"
-                activeClassName="text-foreground"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('nav.dashboard')}
-              </NavLink>
-              <NavLink
-                to="/settings"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground smooth-transition focus-ring"
-                activeClassName="text-foreground"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('nav.settings')}
-              </NavLink>
-            </div>
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
+        <div
+          className="border-t border-border bg-background/95 shadow-sm md:hidden"
+          role="navigation"
+          aria-label="Mobile navigation"
+        >
+          <div className="container mx-auto flex flex-col gap-2 px-4 py-4">
+            <NavLink
+              to="/"
+              end
+              className="smooth-transition rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-ring"
+              activeClassName="bg-muted text-foreground"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t('nav.home')}
+            </NavLink>
+            <NavLink
+              to="/services"
+              className="smooth-transition rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-ring"
+              activeClassName="bg-muted text-foreground"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Services
+            </NavLink>
+            <NavLink
+              to="/about"
+              className="smooth-transition rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-ring"
+              activeClassName="bg-muted text-foreground"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t('nav.about')}
+            </NavLink>
+            <NavLink
+              to="/dashboard"
+              className="smooth-transition rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-ring"
+              activeClassName="bg-muted text-foreground"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t('nav.dashboard')}
+            </NavLink>
+            <NavLink
+              to="/settings"
+              className="smooth-transition rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-ring"
+              activeClassName="bg-muted text-foreground"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {t('nav.settings')}
+            </NavLink>
           </div>
-        )}
+        </div>
+      )}
     </header>
   );
 }

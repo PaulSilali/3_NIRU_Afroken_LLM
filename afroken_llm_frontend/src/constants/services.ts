@@ -7,6 +7,7 @@ export interface ServiceConfig {
   color: string;
   examples: string[];
   description?: string;
+  logo?: string;
 }
 
 export const SERVICES: ServiceConfig[] = [
@@ -16,6 +17,7 @@ export const SERVICES: ServiceConfig[] = [
     description: 'Check status, renew membership, and get coverage information',
     icon: 'Heart',
     color: 'hsl(var(--primary))',
+    logo: '/logos/NHIF-logo.jpg',
     examples: [
       'How do I register for NHIF?',
       'What are the NHIF contribution rates?',
@@ -28,6 +30,7 @@ export const SERVICES: ServiceConfig[] = [
     description: 'File returns, get PIN, check compliance status',
     icon: 'FileText',
     color: 'hsl(var(--accent))',
+    logo: '/logos/kra_logo.png',
     examples: [
       'How do I file my tax returns?',
       'How do I get a KRA PIN?',
@@ -40,6 +43,7 @@ export const SERVICES: ServiceConfig[] = [
     description: 'Register for Huduma Number and manage services',
     icon: 'Building2',
     color: 'hsl(var(--info))',
+    logo: '/logos/huduma center logo.png',
     examples: [
       'How do I book a Huduma Centre appointment?',
       'What documents do I need for ID renewal?',

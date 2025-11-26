@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { AGENTS, DATA_SOURCES, PERFORMANCE_TARGETS } from '@/constants/agents';
 import * as Icons from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
+import heroBackground from '@/assets/hero-background.jpg';
 
 export default function About() {
   const { t } = useTranslation();
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -17,21 +19,31 @@ export default function About() {
       
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden py-16 md:py-24 bg-gradient-to-br from-primary/10 via-background to-accent/5">
-          <div className="container mx-auto px-4">
+        <section className="relative overflow-hidden py-16 md:py-24">
+          {/* Background hero image with overlay */}
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-60"
+            style={{ backgroundImage: `url(${heroBackground})` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-background/97 via-background/90 to-primary/20" />
+
+          <div className="relative container mx-auto px-4">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="max-w-4xl mx-auto text-center"
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="mx-auto max-w-4xl text-center"
             >
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
+              <p className="mb-3 inline-block rounded-full bg-background/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground shadow-sm">
+                🇰🇪 Kenya-first, citizen-centric AI
+              </p>
+              <h1 className="mb-6 text-4xl font-bold md:text-5xl">
                 About AfroKen LLM
               </h1>
-              <p className="text-xl text-muted-foreground mb-4">
+              <p className="mb-4 text-xl text-muted-foreground">
                 A locally hosted, multilingual AI copilot transforming citizen-government interactions
               </p>
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              <p className="mx-auto max-w-3xl text-lg text-muted-foreground">
                 AfroKen LLM addresses Kenya's public service delivery challenges by providing 
                 instant, verified, multilingual responses to citizen queries—powered by advanced 
                 AI trained on Kenyan government data.

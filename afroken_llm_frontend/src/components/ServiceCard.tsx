@@ -11,6 +11,7 @@ interface ServiceCardProps {
     name: string;
     icon: string;
     color: string;
+    logo?: string;
   };
   onClick: () => void;
 }
@@ -38,13 +39,23 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
       <div className="absolute -top-16 -right-16 w-48 h-48 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
       
       <CardHeader className="relative p-8">
-        <div
-          className="w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-glow group-hover:scale-110 group-hover:rotate-3 transition-all duration-500"
-          style={{ background: `linear-gradient(135deg, ${service.color}, ${service.color}dd)` }}
-          aria-hidden="true"
-        >
-          {Icon && <Icon className="w-10 h-10 text-white" />}
-        </div>
+        {service.logo ? (
+          <div className="mb-6 flex h-16 w-32 items-center justify-center rounded-xl border bg-white/90 p-2 shadow-md">
+            <img
+              src={service.logo}
+              alt={service.name}
+              className="max-h-12 w-full object-contain"
+            />
+          </div>
+        ) : (
+          <div
+            className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-glow"
+            style={{ background: `linear-gradient(135deg, ${service.color}, ${service.color}dd)` }}
+            aria-hidden="true"
+          >
+            {Icon && <Icon className="h-10 w-10 text-white" />}
+          </div>
+        )}
         <CardTitle className="text-2xl font-display mb-3 group-hover:text-primary transition-colors font-bold">
           {t(`home.services.${service.id}.title`)}
         </CardTitle>
