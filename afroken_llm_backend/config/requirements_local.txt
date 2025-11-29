@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+python-dotenv
+requests
+beautifulsoup4
+readability-lxml
+sentence-transformers
+faiss-cpu
+numpy
+httpx
+python-multipart
+pyyaml
+

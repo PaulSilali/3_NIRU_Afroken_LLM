@@ -1,0 +1,63 @@
+# Production-grade curated URLs for AfroKen RAG ingestion
+# Only public, non-login pages, picked to maximize procedural guidance content and stability.
+# Do not add login pages, payment portals, or PDF-only documents.
+
+# KRA - Tax guidance & services
+https://www.kra.go.ke/services/pin-registration
+https://www.kra.go.ke/services/tax-compliance-certificate
+https://www.kra.go.ke/services/vat
+https://www.kra.go.ke/en/help/faq
+
+# eCitizen - public service catalog and common services
+https://ecitizen.go.ke/services
+https://ecitizen.go.ke/service/birth-certificates
+https://ecitizen.go.ke/service/passport-application
+https://ecitizen.go.ke/service/id-card-application
+
+# NHIF - benefits & registration guidance
+https://www.nhif.or.ke/online/guide
+https://www.nhif.or.ke/benefits
+
+# NSSF - contributions & benefits
+https://www.nssf.or.ke/benefits
+https://www.nssf.or.ke/contributions
+
+# Huduma Kenya - services & centers
+https://www.huduma.go.ke/services
+https://www.huduma.go.ke/huduma-centers
+
+# Immigration - passport & visa public pages
+https://www.immigration.go.ke/services/passport-application
+https://www.immigration.go.ke/services/visa-application
+
+# Education / KNEC - certificates, exams
+https://www.education.go.ke/index.php/online-services
+https://www.knec.ac.ke/certificates
+
+# Ministry of Health - public guidance
+https://www.health.go.ke/category/health-services
+https://www.health.go.ke/faqs
+
+# Ministry of Interior / Police - public service pages via eCitizen
+https://ecitizen.go.ke/service/police-clearance-certificate
+https://ecitizen.go.ke/service/id-card-application
+
+# Lands / ARDHI - public services
+https://lands.go.ke/index.php/services
+https://ardhi.go.ke/services
+
+# Kenya Law - acts & summaries (Data Protection act, Access to Information)
+https://www.kenyalaw.org/kl/index.php?id=86
+https://www.kenyalaw.org/lex/actview.xql?actid=No.%2032%20of%202018
+https://www.kenyalaw.org/lex/actview.xql?actid=No.%2011%20of%202017
+
+# County services (top counties)
+https://nairobi.go.ke/services
+https://mombasa.go.ke/services
+https://kisumu.go.ke/services
+https://nakuru.go.ke/services
+https://kiambu.go.ke/services
+https://machakos.go.ke/services
+https://meru.go.ke/services
+https://bomet.go.ke/services
+https://tharakanithi.go.ke/services

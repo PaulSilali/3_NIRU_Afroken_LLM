@@ -1,0 +1,64 @@
+# —————————————————————————————
+# OFFICIAL KENYA GOV PUBLIC SERVICE PAGES
+# (Safe to scrape, non-login, high-value RAG content)
+# —————————————————————————————
+
+# KRA
+https://www.kra.go.ke/services/pin-registration
+https://www.kra.go.ke/services/tax-compliance-certificate
+https://www.kra.go.ke/services/vat
+https://www.kra.go.ke/en/help/faq
+
+# eCitizen
+https://ecitizen.go.ke/services
+https://ecitizen.go.ke/category/government-services
+https://ecitizen.go.ke/service/birth-certificates
+https://ecitizen.go.ke/service/passport-application
+
+# NHIF
+https://www.nhif.or.ke/online/guide
+https://www.nhif.or.ke/benefits
+
+# NSSF
+https://www.nssf.or.ke/benefits
+https://www.nssf.or.ke/contributions
+
+# Huduma Kenya
+https://www.huduma.go.ke/services
+https://www.huduma.go.ke/faqs
+
+# Immigration
+https://www.immigration.go.ke/services/passport-application
+https://www.immigration.go.ke/services/visa-application
+
+# Education / KNEC
+https://www.education.go.ke/index.php/online-services
+https://www.knec.ac.ke/certificates
+
+# Ministry of Health
+https://www.health.go.ke/category/health-services
+https://www.health.go.ke/faqs
+
+# Ministry of Interior
+https://www.ecitizen.go.ke/service/police-clearance-certificate
+https://www.ecitizen.go.ke/service/id-card-application
+
+# Lands
+https://lands.go.ke/index.php/services
+https://ardhi.go.ke/services
+
+# Kenya Law (Acts)
+https://www.kenyalaw.org/kl/index.php?id=86
+https://www.kenyalaw.org/lex/actview.xql?actid=No.%2032%20of%202018
+https://www.kenyalaw.org/lex/actview.xql?actid=No.%2011%20of%202017
+
+# Top 10 Counties
+https://nairobi.go.ke/services
+https://mombasa.go.ke/services
+https://kisumu.go.ke/services
+https://nakuru.go.ke/services
+https://kiambu.go.ke/services
+https://machakos.go.ke/services
+https://meru.go.ke/services
+https://bomet.go.ke/services
+https://tharakanithi.go.ke/services

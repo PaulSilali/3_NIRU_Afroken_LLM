@@ -1,18 +1,56 @@
-## AfroKen LLM – Backend (Monolith)
+# AfroKen LLM Backend
 
-### Quick start (dev)
+FastAPI backend for the AfroKen LLM Citizen Service Copilot.
 
-1. Create a `.env` file in `afroken_llm_backend` based on the environment variables described in `app/config.py` (DATABASE_URL, REDIS_URL, MINIO_*, JWT_*, LLM_/EMBEDDING_* and ENV).
-2. From the `afroken_llm_backend` folder, run:
-   - `docker compose up --build`
-3. Run the DB init script once (from a container or environment that can reach Postgres):
-   - `python scripts/init_db.py`
-4. Open `http://localhost:8000/docs` to explore the API.
+> **📖 Full documentation**: See [docs/README.md](docs/README.md) for complete setup and usage guide.
 
-### Notes
+## Quick Start
 
-- This is a hackathon-ready starter for AfroKen LLM – Citizen Service Copilot.
-- Replace the demo OTP and LLM/embedding endpoints with real services before production.
-- Ensure PostgreSQL has the `vector` extension installed to support pgvector features.
+```bash
+# Setup
+python -m venv venv
+venv\Scripts\activate  # Windows
+pip install -r requirements.txt
+pip install -r config/requirements_local.txt
 
+# Build RAG corpus (optional)
+python scripts/rag/check_robots_report.py config/urls.txt
+python scripts/rag/fetch_and_extract.py config/urls.txt
+python scripts/rag/chunk_and_write_md.py
+python scripts/rag/index_faiss.py
+
+# Start backend
+./run_local.sh
+# Or: uvicorn app.main:app --reload --port 8000
+```
+
+## Project Structure
+
+```
+afroken_llm_backend/
+├── app/              # FastAPI application
+├── scripts/          # Utility scripts (RAG pipeline, DB)
+├── data/             # Data directories (raw, docs, corpus)
+├── config/           # Configuration files
+├── docs/             # Documentation
+└── docker/           # Docker configuration
+```
+
+See [docs/README.md](docs/README.md) for detailed structure and documentation.
+
+## Features
+
+- ✅ FastAPI REST API
+- ✅ RAG (Retrieval-Augmented Generation) with FAISS
+- ✅ Local embedding fallback (sentence-transformers)
+- ✅ Robots.txt compliance checking
+- ✅ Document ingestion pipeline
+- ✅ Chat endpoint with RAG fallback
+
+## Documentation
+
+- [Complete README](docs/README.md)
+- [Next Steps Guide](docs/NEXT_STEPS.md)
+- [Robots.txt Check Guide](docs/ROBOTS_CHECK_GUIDE.md)
+- [Improvements Applied](docs/IMPROVEMENTS_APPLIED.md)
 

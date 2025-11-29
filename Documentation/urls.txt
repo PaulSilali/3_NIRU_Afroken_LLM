@@ -1,0 +1,106 @@
+# Add more official pages below. Do not add private or login-protected urls.
+
+# KRA
+https://www.kra.go.ke/services/pin
+https://itax.kra.go.ke/itax/portal
+https://www.kra.go.ke/services/pin-registration
+https://www.kra.go.ke/services/tax-compliance-certificate
+https://www.kra.go.ke/services/vat
+https://www.kra.go.ke/en/individual/citizen-services
+https://www.kra.go.ke/en/business/business-tax
+https://www.kra.go.ke/en/help/faq
+
+
+# eCitizen
+https://ecitizen.go.ke/efacility/home/index
+# eCitizen general
+https://ecitizen.go.ke/services
+https://ecitizen.go.ke/category/government-services
+https://ecitizen.go.ke/category/citizen
+
+# Birth, Death & Certificates
+https://ecitizen.go.ke/service/birth-certificates
+https://ecitizen.go.ke/service/death-certificates
+
+# NTSA (via eCitizen)
+https://timsvirl.ntsa.go.ke/vehicleservice/
+
+
+
+
+# NHIF
+https://www.nhif.or.ke/services/registration
+# NHIF
+https://www.nhif.or.ke/online/guide
+https://www.nhif.or.ke/benefits
+https://www.nhif.or.ke/providers
+https://www.nhif.or.ke/customer-care
+
+
+# NSSF
+https://www.nssf.or.ke/registration
+# NSSF
+https://www.nssf.or.ke/benefits
+https://www.nssf.or.ke/contributions
+https://www.nssf.or.ke/customer-care/faqs
+
+
+
+
+# Huduma
+https://www.huduma.go.ke/services
+# Huduma
+https://www.huduma.go.ke/huduma-centers
+https://www.huduma.go.ke/services
+https://www.huduma.go.ke/faqs
+
+
+# Immigration
+https://www.immigration.go.ke/services/passport
+
+# Kenya Law (acts)
+https://kenyalaw.org
+
+
+# Education
+https://www.education.go.ke/index.php/online-services
+https://www.knec.ac.ke/exams
+https://www.knec.ac.ke/certificates
+
+# Ministry of Health
+https://www.health.go.ke/category/health-services
+https://www.health.go.ke/community-health
+https://www.health.go.ke/faqs
+
+
+# Interior
+https://www.frontiers.go.ke
+https://www.ecitizen.go.ke/service/police-clearance-certificate
+https://www.ecitizen.go.ke/service/id-card-application
+https://www.ecitizen.go.ke/service/alien-card
+
+
+# Lands
+https://lands.go.ke/index.php/services
+https://ardhi.go.ke/services
+https://ardhiconnect.go.ke
+
+
+# Kenya Law - Acts Index
+https://www.kenyalaw.org/kl/index.php?id=86
+https://www.kenyalaw.org/lex/actview.xql?actid=No.%2032%20of%202018   # Data Protection Act
+https://www.kenyalaw.org/lex/actview.xql?actid=No.%2011%20of%202017   # Access to Information Act
+
+
+
+# County Governments
+https://nairobi.go.ke/services
+https://mombasa.go.ke/services
+https://kisumu.go.ke/services
+https://nakuru.go.ke/services
+https://eldoret.go.ke/services
+https://kiambu.go.ke/services
+https://machakos.go.ke/services
+https://meru.go.ke/services
+https://tharakanithi.go.ke/services
+https://bomet.go.ke/services
