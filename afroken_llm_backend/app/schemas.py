@@ -72,3 +72,50 @@ class DocumentIn(BaseModel):
     # Optional category label for grouping/searching (e.g. "NHIF").
     category: Optional[str] = None
 
+
+class URLScrapeRequest(BaseModel):
+    """Request to scrape a URL."""
+    url: str
+    category: Optional[str] = None
+
+
+class ProcessingJobResponse(BaseModel):
+    """Response for processing job status."""
+    job_id: str
+    job_type: str
+    status: str
+    progress: int
+    source: str
+    documents_processed: int
+    error_message: Optional[str] = None
+    result: Optional[dict] = None
+    created_at: str
+    updated_at: str
+
+
+class ProcessingReportResponse(BaseModel):
+    """Response for processing reports."""
+    total_jobs: int
+    completed_jobs: int
+    failed_jobs: int
+    pending_jobs: int
+    jobs: List[ProcessingJobResponse]
+
+
+class AudioTranscribeRequest(BaseModel):
+    """Request for audio transcription."""
+    language: Optional[str] = None  # Auto-detect if None
+
+
+class AudioTranscribeResponse(BaseModel):
+    """Response for audio transcription."""
+    text: str
+    language: str
+    segments: List[dict]
+
+
+class AudioSynthesizeRequest(BaseModel):
+    """Request for text-to-speech."""
+    text: str
+    language: str = "sw"
+    output_format: str = "wav"

@@ -110,3 +110,31 @@ class Document(SQLModel, table=True):
     # Timestamp indicating when the document record was created.
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
+class ProcessingJob(SQLModel, table=True):
+    """
+    Tracks document processing jobs (PDF upload, URL scraping).
+    """
+
+    # Primary key as a UUID string, generated automatically.
+    id: Optional[str] = Field(
+        default_factory=lambda: str(uuid.uuid4()), primary_key=True
+    )
+    # Job type: "pdf_upload", "url_scrape", "batch_process"
+    job_type: str
+    # Job status: "pending", "processing", "completed", "failed"
+    status: str = Field(default="pending")
+    # Source identifier (filename, URL, etc.)
+    source: str
+    # Progress percentage (0-100)
+    progress: int = Field(default=0)
+    # Error message if failed
+    error_message: Optional[str] = None
+    # Result data (JSON)
+    result: Optional[str] = None
+    # Number of documents processed
+    documents_processed: int = Field(default=0)
+    # Timestamp when job was created
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    # Timestamp when job was updated
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

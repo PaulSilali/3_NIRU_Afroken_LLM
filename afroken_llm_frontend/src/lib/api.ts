@@ -75,48 +75,48 @@ export async function postChat(payload: ChatRequest): Promise<ChatResponse> {
 function postChatMock(payload: ChatRequest): Promise<ChatResponse> {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const serviceKey = payload.context?.service || 'default';
-      let answer = MOCK_RESPONSES[serviceKey] || MOCK_RESPONSES.default;
+  const serviceKey = payload.context?.service || 'default';
+  let answer = MOCK_RESPONSES[serviceKey] || MOCK_RESPONSES.default;
 
-      // Check for specific keywords in the message
-      const message = payload.message.toLowerCase();
-      if (message.includes('nhif') || message.includes('health') || message.includes('insurance')) {
-        answer = MOCK_RESPONSES.nhif;
-      } else if (message.includes('kra') || message.includes('tax') || message.includes('pin')) {
-        answer = MOCK_RESPONSES.kra;
-      } else if (message.includes('huduma') || message.includes('id') || message.includes('passport')) {
-        answer = MOCK_RESPONSES.huduma;
-      }
+  // Check for specific keywords in the message
+  const message = payload.message.toLowerCase();
+  if (message.includes('nhif') || message.includes('health') || message.includes('insurance')) {
+    answer = MOCK_RESPONSES.nhif;
+  } else if (message.includes('kra') || message.includes('tax') || message.includes('pin')) {
+    answer = MOCK_RESPONSES.kra;
+  } else if (message.includes('huduma') || message.includes('id') || message.includes('passport')) {
+    answer = MOCK_RESPONSES.huduma;
+  }
 
-      // Add language-specific variations
-      if (payload.lang === 'sw') {
-        answer = `[Swahili] ${answer}`;
-      } else if (payload.lang === 'sheng') {
-        answer = `[Sheng] ${answer}`;
-      }
+  // Add language-specific variations
+  if (payload.lang === 'sw') {
+    answer = `[Swahili] ${answer}`;
+  } else if (payload.lang === 'sheng') {
+    answer = `[Sheng] ${answer}`;
+  }
 
-      const relevantCitations = MOCK_CITATIONS.filter((citation) => {
-        const title = citation.title.toLowerCase();
-        return (
-          (message.includes('nhif') && title.includes('nhif')) ||
-          (message.includes('kra') && title.includes('kra')) ||
-          (message.includes('huduma') && title.includes('huduma'))
-        );
-      }).slice(0, 2);
+  const relevantCitations = MOCK_CITATIONS.filter((citation) => {
+    const title = citation.title.toLowerCase();
+    return (
+      (message.includes('nhif') && title.includes('nhif')) ||
+      (message.includes('kra') && title.includes('kra')) ||
+      (message.includes('huduma') && title.includes('huduma'))
+    );
+  }).slice(0, 2);
 
       resolve({
-        id: `msg_${Date.now()}`,
-        answer,
-        citations: relevantCitations.length > 0 ? relevantCitations : [MOCK_CITATIONS[3]],
-        actions: serviceKey === 'huduma'
-          ? [
-              {
-                type: 'BOOK',
-                label: 'Book Appointment',
-                payload: { service: 'huduma' },
-              },
-            ]
-          : undefined,
+    id: `msg_${Date.now()}`,
+    answer,
+    citations: relevantCitations.length > 0 ? relevantCitations : [MOCK_CITATIONS[3]],
+    actions: serviceKey === 'huduma'
+      ? [
+          {
+            type: 'BOOK',
+            label: 'Book Appointment',
+            payload: { service: 'huduma' },
+          },
+        ]
+      : undefined,
       });
     }, API_DELAY);
   });
@@ -157,4 +157,46 @@ export async function getMetrics(county?: string): Promise<DashboardMetrics> {
       coordinates: c.coordinates as [number, number]
     })),
   };
+}
+
+// Admin API functions
+export async function uploadPDF(file: File, category?: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (category) formData.append('category', category);
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/documents/upload-pdf`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) throw new Error('Upload failed');
+  return response.json();
+}
+
+export async function scrapeURL(url: string, category?: string) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/documents/scrape-url`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, category }),
+  });
+
+  if (!response.ok) throw new Error('Scraping failed');
+  return response.json();
+}
+
+export async function getJobs(status?: string, jobType?: string) {
+  const params = new URLSearchParams();
+  if (status) params.append('status', status);
+  if (jobType) params.append('job_type', jobType);
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/jobs?${params}`);
+  if (!response.ok) throw new Error('Failed to fetch jobs');
+  return response.json();
+}
+
+export async function getJobStatus(jobId: string) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/jobs/${jobId}`);
+  if (!response.ok) throw new Error('Failed to fetch job status');
+  return response.json();
 }

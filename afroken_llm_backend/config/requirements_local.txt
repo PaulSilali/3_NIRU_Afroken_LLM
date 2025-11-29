@@ -12,4 +12,6 @@ numpy
 httpx
 python-multipart
 pyyaml
+PyPDF2
+pdfplumber
 

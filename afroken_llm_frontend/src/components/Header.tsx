@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, X, Sparkles } from 'lucide-react';
+import { Menu, X, Sparkles, LogIn } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -9,8 +9,10 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function Header() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const isAuthenticated = !!localStorage.getItem('authToken');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -98,6 +100,29 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Login/Admin Button - positioned before theme toggle */}
+          {isAuthenticated ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/admin')}
+              className="hidden md:flex gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Admin
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/login')}
+              className="focus-ring"
+              aria-label="Login"
+            >
+              <LogIn className="h-5 w-5" />
+            </Button>
+          )}
+          
           <ThemeToggle />
           <LanguageSwitcher />
 
@@ -164,6 +189,32 @@ export function Header() {
             >
               {t('nav.settings')}
             </NavLink>
+            {!isAuthenticated && (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate('/login');
+                }}
+              >
+                <LogIn className="w-4 h-4" />
+                Login
+              </Button>
+            )}
+            {isAuthenticated && (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate('/admin');
+                }}
+              >
+                <Sparkles className="w-4 h-4" />
+                Admin Dashboard
+              </Button>
+            )}
           </div>
         </div>
       )}

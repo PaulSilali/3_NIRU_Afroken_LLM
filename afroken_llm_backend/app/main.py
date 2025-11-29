@@ -20,7 +20,7 @@ from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_
 
 from app.config import settings
 from app.db import init_db
-from app.api.routes import auth, chat, admin, ussd
+from app.api.routes import auth, chat, admin, ussd, audio
 
 # Preload RAG resources on startup
 try:
@@ -50,6 +50,7 @@ app.add_middleware(
         "http://localhost:5173",  # Vite default
         "http://localhost:3000",  # Alternative port
         "http://localhost:5174",  # Vite alternative
+        "http://localhost:8080",  # Alternative frontend port
         "*"  # Allow all in development
     ] if settings.ENV == "development" else ["https://your.gov.domain"],
     # Allow cookies / auth headers to be sent cross-origin if needed.
@@ -70,6 +71,8 @@ app.include_router(chat.router, prefix="/api/v1/chat", tags=["chat"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 # Mount USSD integration endpoints under `/api/v1/ussd`.
 app.include_router(ussd.router, prefix="/api/v1/ussd", tags=["ussd"])
+# Mount audio processing endpoints under `/api/v1/audio`.
+app.include_router(audio.router, prefix="/api/v1/audio", tags=["audio"])
 
 
 @app.on_event("startup")
@@ -85,16 +88,19 @@ async def on_startup() -> None:
     """
 
     # Run table creation against the configured database.
+    # This will gracefully handle missing database connections for local RAG-only mode
     init_db()
+    
     # Store a global async lock that can be used to guard model access.
     app.state.model_lock = asyncio.Lock()
     
-    # Preload RAG resources
+    # Preload RAG resources (critical for chat functionality)
     try:
         _load_rag_resources()
         print("✓ RAG resources preloaded")
     except Exception as e:
         print(f"⚠ RAG resources not available: {e}")
+        print("  Chat functionality may be limited")
     
     # Log a simple startup message for debugging/observability.
     print("AfroKen backend startup complete")
