@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { getMetrics } from '@/lib/api';
+import { CountyMetric } from '@/types';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,13 +20,23 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-export function CountyMap() {
+interface CountyMapProps {
+  filteredCounty?: string;
+  counties?: CountyMetric[];
+}
+
+export function CountyMap({ filteredCounty, counties: propCounties }: CountyMapProps = {}) {
+  // If counties are provided, use them directly (no loading needed)
+  // Otherwise, fetch metrics (but it's instant with dummy data)
   const { data: metrics, isLoading } = useQuery({
-    queryKey: ['metrics'],
-    queryFn: () => getMetrics(),
+    queryKey: ['metrics', filteredCounty, '30d'], // Use default timeRange
+    queryFn: () => getMetrics(filteredCounty, '30d'),
+    enabled: !propCounties, // Only fetch if counties not provided
+    staleTime: 0,
+    gcTime: 0,
   });
 
-  if (isLoading) {
+  if (isLoading && !propCounties) {
     return (
       <Card>
         <CardHeader>
@@ -38,21 +49,35 @@ export function CountyMap() {
     );
   }
 
-  const counties = metrics?.countySummary || [];
+  const counties = propCounties || metrics?.countySummary || [];
+  
+  // If a specific county is filtered, center the map on that county
+  const centerCounty = filteredCounty && counties.length > 0
+    ? counties.find(c => c.countyName === filteredCounty)
+    : null;
+  
+  const mapCenter = centerCounty 
+    ? centerCounty.coordinates 
+    : [-1.286389, 36.817223]; // Default to Kenya center
+  const mapZoom = centerCounty ? 9 : 7;
 
   return (
     <Card className="border-2 shadow-lg">
       <CardHeader>
-        <CardTitle className="font-display text-2xl">County Query Distribution</CardTitle>
+        <CardTitle className="font-display text-2xl">
+          County Query Distribution
+          {filteredCounty && filteredCounty !== 'all' && ` - ${filteredCounty}`}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="w-full h-[400px] rounded-lg overflow-hidden border-2 border-border shadow-md">
           {counties.length > 0 ? (
             <MapContainer
-              center={[-1.286389, 36.817223]}
-              zoom={7}
+              center={mapCenter as [number, number]}
+              zoom={mapZoom}
               className="w-full h-full"
               scrollWheelZoom={false}
+              key={`${mapCenter[0]}-${mapCenter[1]}-${mapZoom}`}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

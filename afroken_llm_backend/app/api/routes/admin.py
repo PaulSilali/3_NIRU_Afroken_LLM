@@ -131,13 +131,25 @@ async def process_pdf_background(
             session.add(doc)
             session.commit()
             
-            # Update embedding using raw SQL (pgvector)
+            # Update embedding using raw SQL
+            # Store as JSON string if pgvector not available (TEXT column), otherwise as vector
             if "postgresql" in str(engine.url):
-                update_q = text(
-                    "UPDATE document SET embedding = :e::vector WHERE id = :id"
-                )
-                session.execute(update_q, {"e": emb, "id": doc.id})
-                session.commit()
+                try:
+                    # Try pgvector first
+                    update_q = text(
+                        "UPDATE document SET embedding = :e::vector WHERE id = :id"
+                    )
+                    session.execute(update_q, {"e": emb, "id": doc.id})
+                    session.commit()
+                except Exception:
+                    # Fallback to TEXT (JSON string) if pgvector not available
+                    import json
+                    emb_json = json.dumps(emb.tolist() if hasattr(emb, 'tolist') else list(emb))
+                    update_q = text(
+                        "UPDATE document SET embedding = :e::text WHERE id = :id"
+                    )
+                    session.execute(update_q, {"e": emb_json, "id": doc.id})
+                    session.commit()
         
         # Update job as completed
         with Session(engine) as session:
@@ -296,12 +308,24 @@ async def scrape_url_background(
                 session.commit()
                 
                 # Update embedding
+                # Store as JSON string if pgvector not available (TEXT column), otherwise as vector
                 if "postgresql" in str(engine.url):
-                    update_q = text(
-                        "UPDATE document SET embedding = :e::vector WHERE id = :id"
-                    )
-                    session.execute(update_q, {"e": emb, "id": doc.id})
-                    session.commit()
+                    try:
+                        # Try pgvector first
+                        update_q = text(
+                            "UPDATE document SET embedding = :e::vector WHERE id = :id"
+                        )
+                        session.execute(update_q, {"e": emb, "id": doc.id})
+                        session.commit()
+                    except Exception:
+                        # Fallback to TEXT (JSON string) if pgvector not available
+                        import json
+                        emb_json = json.dumps(emb.tolist() if hasattr(emb, 'tolist') else list(emb))
+                        update_q = text(
+                            "UPDATE document SET embedding = :e::text WHERE id = :id"
+                        )
+                        session.execute(update_q, {"e": emb_json, "id": doc.id})
+                        session.commit()
                 
                 doc_ids.append(doc.id)
         
@@ -545,8 +569,290 @@ async def upload_document(file: UploadFile = File(...), source: str = "ministry"
         
         # Generate embedding
         emb = await get_embedding(text_content)
-        update_q = text("UPDATE document SET embedding = :e::vector WHERE id = :id")
-        session.execute(update_q, {"e": emb, "id": doc_id})
-        session.commit()
+        # Store as JSON string if pgvector not available (TEXT column), otherwise as vector
+        try:
+            # Try pgvector first
+            update_q = text("UPDATE document SET embedding = :e::vector WHERE id = :id")
+            session.execute(update_q, {"e": emb, "id": doc_id})
+            session.commit()
+        except Exception:
+            # Fallback to TEXT (JSON string) if pgvector not available
+            import json
+            emb_json = json.dumps(emb.tolist() if hasattr(emb, 'tolist') else list(emb))
+            update_q = text("UPDATE document SET embedding = :e::text WHERE id = :id")
+            session.execute(update_q, {"e": emb_json, "id": doc_id})
+            session.commit()
     
     return {"doc_id": doc_id, "path": path}
+
+
+# ============================================================================
+# SERVICES MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@router.get("/services")
+async def get_services():
+    """Get all services from database."""
+    try:
+        with Session(engine) as session:
+            query = text("SELECT id, name, category, description, service_website, keywords, is_active FROM services ORDER BY name")
+            result = session.execute(query)
+            rows = result.fetchall()
+            
+            services = []
+            for row in rows:
+                services.append({
+                    "id": str(row[0]),
+                    "name": row[1],
+                    "category": row[2],
+                    "description": row[3],
+                    "website": row[4],
+                    "keywords": row[5],
+                    "is_active": row[6]
+                })
+            return {"services": services}
+    except Exception as e:
+        print(f"Error fetching services: {e}")
+        return {"services": []}
+
+
+@router.post("/services")
+async def create_service(
+    title: str,
+    description: str,
+    category: str = "general",
+    logo: UploadFile = File(None)
+):
+    """Create a new service with optional logo upload."""
+    try:
+        # Check if service already exists
+        with Session(engine) as session:
+            check_q = text("SELECT id FROM services WHERE LOWER(name) = LOWER(:name)")
+            existing = session.execute(check_q, {"name": title}).fetchone()
+            if existing:
+                raise HTTPException(status_code=400, detail="Service with this name already exists")
+        
+        # Upload logo if provided
+        logo_url = None
+        if logo:
+            try:
+                logo_data = await logo.read()
+                logo_url = upload_bytes(
+                    "logos",
+                    f"services/{title.lower().replace(' ', '_')}_{logo.filename}",
+                    logo_data,
+                    content_type=logo.content_type or "image/png"
+                )
+            except Exception as e:
+                print(f"Warning: Logo upload failed: {e}")
+        
+        # Insert service into database
+        with Session(engine) as session:
+            insert_q = text(
+                """
+                INSERT INTO services (name, category, description, service_website, is_active, keywords)
+                VALUES (:name, :cat, :desc, :web, true, :keywords)
+                RETURNING id
+                """
+            )
+            result = session.execute(
+                insert_q,
+                {
+                    "name": title,
+                    "cat": category,
+                    "desc": description,
+                    "web": logo_url or "",
+                    "keywords": title.lower()
+                }
+            )
+            service_id = result.scalar()
+            session.commit()
+            
+            return {
+                "id": str(service_id),
+                "name": title,
+                "category": category,
+                "description": description,
+                "logo_url": logo_url,
+                "message": "Service created successfully"
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create service: {str(e)}")
+
+
+# ============================================================================
+# HUDUMA CENTRES MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@router.get("/huduma-centres")
+async def get_huduma_centres():
+    """Get all Huduma Centres from database."""
+    try:
+        with Session(engine) as session:
+            query = text(
+                """
+                SELECT id, name, center_code, county, sub_county, town, latitude, longitude, 
+                       contact_phone, contact_email, services_offered, is_active
+                FROM huduma_centres 
+                ORDER BY county, name
+                """
+            )
+            result = session.execute(query)
+            rows = result.fetchall()
+            
+            centres = []
+            for row in rows:
+                centres.append({
+                    "id": str(row[0]),
+                    "name": row[1],
+                    "center_code": row[2],
+                    "county": row[3],
+                    "sub_county": row[4],
+                    "town": row[5],
+                    "latitude": float(row[6]) if row[6] else None,
+                    "longitude": float(row[7]) if row[7] else None,
+                    "contact_phone": row[8],
+                    "contact_email": row[9],
+                    "services_offered": json.loads(row[10]) if row[10] else [],
+                    "is_active": row[11]
+                })
+            return {"centres": centres}
+    except Exception as e:
+        print(f"Error fetching Huduma Centres: {e}")
+        return {"centres": []}
+
+
+@router.post("/huduma-centres")
+async def create_huduma_centre(
+    name: str,
+    county: str,
+    sub_county: str = None,
+    town: str = None,
+    latitude: float = None,
+    longitude: float = None,
+    contact_phone: str = None,
+    contact_email: str = None
+):
+    """Create a new Huduma Centre."""
+    try:
+        # Generate center code
+        center_code = f"HC-{name.upper().replace(' ', '-')[:20]}"
+        
+        with Session(engine) as session:
+            insert_q = text(
+                """
+                INSERT INTO huduma_centres 
+                (name, center_code, county, sub_county, town, latitude, longitude, 
+                 contact_phone, contact_email, services_offered, opening_hours, facilities, is_active)
+                VALUES 
+                (:name, :code, :county, :sub_county, :town, :lat, :lon, 
+                 :phone, :email, '[]'::jsonb, 
+                 '{"monday": "8:00 AM - 5:00 PM", "tuesday": "8:00 AM - 5:00 PM", 
+                   "wednesday": "8:00 AM - 5:00 PM", "thursday": "8:00 AM - 5:00 PM", 
+                   "friday": "8:00 AM - 5:00 PM", "saturday": "8:00 AM - 1:00 PM", 
+                   "sunday": "CLOSED"}'::jsonb,
+                 '["parking", "wifi", "restrooms"]'::jsonb, true)
+                RETURNING id
+                """
+            )
+            result = session.execute(
+                insert_q,
+                {
+                    "name": name,
+                    "code": center_code,
+                    "county": county,
+                    "sub_county": sub_county,
+                    "town": town,
+                    "lat": latitude,
+                    "lon": longitude,
+                    "phone": contact_phone,
+                    "email": contact_email
+                }
+            )
+            centre_id = result.scalar()
+            session.commit()
+            
+            return {
+                "id": str(centre_id),
+                "name": name,
+                "center_code": center_code,
+                "county": county,
+                "message": "Huduma Centre created successfully"
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create Huduma Centre: {str(e)}")
+
+
+# ============================================================================
+# CHAT METRICS ENDPOINT
+# ============================================================================
+
+@router.get("/metrics")
+async def get_chat_metrics():
+    """Get aggregated chat metrics from database."""
+    try:
+        with Session(engine) as session:
+            # Get latest metrics (last 30 days aggregated)
+            query = text(
+                """
+                SELECT 
+                    COALESCE(SUM(total_conversations), 0) as total_conversations,
+                    COALESCE(SUM(total_messages), 0) as total_messages,
+                    COALESCE(SUM(total_queries), 0) as total_queries,
+                    COALESCE(AVG(average_response_time_ms), 0) / 1000.0 as avg_response_time,
+                    COALESCE(AVG(average_satisfaction_score), 0) * 20 as satisfaction_rate,
+                    COALESCE(SUM(unique_users), 0) as unique_users
+                FROM chat_metrics
+                WHERE date_hour >= NOW() - INTERVAL '30 days'
+                """
+            )
+            result = session.execute(query)
+            row = result.fetchone()
+            
+            # Get top intents from latest metrics
+            intents_query = text(
+                """
+                SELECT top_intents
+                FROM chat_metrics
+                WHERE date_hour >= NOW() - INTERVAL '30 days'
+                  AND top_intents IS NOT NULL
+                ORDER BY date_hour DESC
+                LIMIT 1
+                """
+            )
+            intents_result = session.execute(intents_query)
+            intents_row = intents_result.fetchone()
+            
+            top_intents = []
+            if intents_row and intents_row[0]:
+                intents_data = json.loads(intents_row[0]) if isinstance(intents_row[0], str) else intents_row[0]
+                if isinstance(intents_data, list):
+                    top_intents = intents_data[:5]
+            
+            # Calculate escalations (placeholder - would need conversations table)
+            escalations = 0
+            
+            return {
+                "total_queries": int(row[2]) if row[2] else 0,
+                "total_conversations": int(row[0]) if row[0] else 0,
+                "total_messages": int(row[1]) if row[1] else 0,
+                "avg_response_time": float(row[3]) if row[3] else 0,
+                "satisfaction_rate": round(float(row[4]) if row[4] else 0),
+                "escalations": escalations,
+                "unique_users": int(row[5]) if row[5] else 0,
+                "top_intents": top_intents
+            }
+    except Exception as e:
+        print(f"Error fetching metrics: {e}")
+        return {
+            "total_queries": 0,
+            "total_conversations": 0,
+            "total_messages": 0,
+            "avg_response_time": 0,
+            "satisfaction_rate": 0,
+            "escalations": 0,
+            "unique_users": 0,
+            "top_intents": []
+        }

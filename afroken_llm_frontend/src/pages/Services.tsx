@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Search,
   Heart,
@@ -23,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useChatStore } from '@/store/chatStore';
+import { getServices } from '@/lib/api';
 
 interface Service {
   id: string;
@@ -211,13 +213,58 @@ export default function Services() {
   const shouldReduceMotion = useReducedMotion();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  
+  // Fetch services from API
+  const { data: apiServicesData } = useQuery({
+    queryKey: ['services'],
+    queryFn: getServices,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+  
+  // Merge API services with dummy data
+  const [allServices, setAllServices] = useState<Service[]>(ALL_SERVICES);
+  
+  useEffect(() => {
+    if (apiServicesData?.services) {
+      const apiServices = apiServicesData.services
+        .filter((apiService: any) => apiService.is_active)
+        .map((apiService: any) => {
+          // Check if service already exists in dummy data
+          const existingService = ALL_SERVICES.find(
+            s => s.title.toLowerCase() === apiService.name.toLowerCase()
+          );
+          
+          // If exists, don't add duplicate
+          if (existingService) {
+            return null;
+          }
+          
+          // Map API service to frontend format
+          return {
+            id: apiService.id || apiService.name.toLowerCase().replace(/\s+/g, '-'),
+            title: apiService.name,
+            description: apiService.description || 'Government service',
+            icon: Building2, // Default icon
+            iconBg: 'bg-gray-50',
+            iconColor: 'text-gray-600',
+            category: ['all', apiService.category || 'general'],
+            popular: false,
+            logo: apiService.website || undefined,
+          } as Service;
+        })
+        .filter((s: Service | null): s is Service => s !== null);
+      
+      // Merge: dummy data + new API services (avoiding duplicates)
+      setAllServices([...ALL_SERVICES, ...apiServices]);
+    }
+  }, [apiServicesData]);
 
   const handleGetHelp = (serviceId: string) => {
     setCurrentService(serviceId as any);
     setIsOpen(true);
   };
 
-  const filteredServices = ALL_SERVICES.filter((service) => {
+  const filteredServices = allServices.filter((service) => {
     const matchesCategory = service.category.includes(activeCategory);
     const matchesSearch = 
       service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

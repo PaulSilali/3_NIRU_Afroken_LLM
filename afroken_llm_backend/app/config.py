@@ -6,7 +6,8 @@ When the app starts, `settings = Settings()` reads from the OS env (and `.env` f
 and makes these values available as `settings.DATABASE_URL`, `settings.REDIS_URL`, etc.
 """
 
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 
@@ -62,14 +63,12 @@ class Settings(BaseSettings):
     # Environment name, used to toggle behaviours like CORS (e.g. "development", "production").
     ENV: str = Field("development", env="ENV")
 
-    class Config:
-        """
-        Extra configuration for Pydantic `BaseSettings`:
-        - `env_file` tells Pydantic to also read values from a `.env` file if present.
-        """
-
+    model_config = SettingsConfigDict(
         # Name of the file containing key=value pairs, loaded in addition to OS env vars.
-        env_file = ".env"
+        env_file=".env",
+        # Ignore extra environment variables that aren't defined in the model
+        extra="ignore"
+    )
 
 
 # Instantiate a global settings object that will be imported and reused across the app.

@@ -105,6 +105,40 @@ async function getJobStatus(jobId: string) {
   return response.json();
 }
 
+async function createService(formData: FormData) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/services`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to create service');
+  }
+  return response.json();
+}
+
+async function createHudumaCentre(data: {
+  name: string;
+  county: string;
+  sub_county?: string;
+  town?: string;
+  latitude?: number;
+  longitude?: number;
+  contact_phone?: string;
+  contact_email?: string;
+}) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/huduma-centres`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to create Huduma Centre');
+  }
+  return response.json();
+}
+
 // Mock data for demonstration
 const countyData = [
   { name: 'Nairobi', queries: 12500, satisfaction: 87, escalations: 45 },
@@ -146,6 +180,13 @@ export default function AdminDashboard() {
   const [urlCategory, setUrlCategory] = useState('');
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   const [selectedCounty, setSelectedCounty] = useState('all');
+  const [serviceFormOpen, setServiceFormOpen] = useState(false);
+  const [hudumaFormOpen, setHudumaFormOpen] = useState(false);
+  const [newService, setNewService] = useState({ title: '', description: '', category: 'general', logo: null as File | null });
+  const [newHuduma, setNewHuduma] = useState({ 
+    name: '', county: '', sub_county: '', town: '', 
+    latitude: '', longitude: '', contact_phone: '', contact_email: '' 
+  });
   const [modelSettings, setModelSettings] = useState({
     llmEndpoint: '',
     fineTunedEndpoint: '',
@@ -201,6 +242,49 @@ export default function AdminDashboard() {
     },
     onError: (error) => {
       toast.error(`Scraping failed: ${error.message}`);
+    },
+  });
+
+  const serviceMutation = useMutation({
+    mutationFn: async () => {
+      const formData = new FormData();
+      formData.append('title', newService.title);
+      formData.append('description', newService.description);
+      formData.append('category', newService.category);
+      if (newService.logo) {
+        formData.append('logo', newService.logo);
+      }
+      return createService(formData);
+    },
+    onSuccess: () => {
+      toast.success('Service created successfully!');
+      setNewService({ title: '', description: '', category: 'general', logo: null });
+      setServiceFormOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create service: ${error.message}`);
+    },
+  });
+
+  const hudumaMutation = useMutation({
+    mutationFn: () => createHudumaCentre({
+      name: newHuduma.name,
+      county: newHuduma.county,
+      sub_county: newHuduma.sub_county || undefined,
+      town: newHuduma.town || undefined,
+      latitude: newHuduma.latitude ? parseFloat(newHuduma.latitude) : undefined,
+      longitude: newHuduma.longitude ? parseFloat(newHuduma.longitude) : undefined,
+      contact_phone: newHuduma.contact_phone || undefined,
+      contact_email: newHuduma.contact_email || undefined,
+    }),
+    onSuccess: () => {
+      toast.success('Huduma Centre created successfully!');
+      setNewHuduma({ name: '', county: '', sub_county: '', town: '', latitude: '', longitude: '', contact_phone: '', contact_email: '' });
+      setHudumaFormOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to create Huduma Centre: ${error.message}`);
     },
   });
 
@@ -1159,6 +1243,188 @@ export default function AdminDashboard() {
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
+            {/* Add Service Form */}
+            <Card className="border-2 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileCheck className="w-5 h-5 text-[#006A4E]" />
+                  Add New Service
+                </CardTitle>
+                <CardDescription>
+                  Add a new government service that will appear as a card on the Services page
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="service-title">Service Title *</Label>
+                  <Input
+                    id="service-title"
+                    placeholder="e.g., NTSA Services"
+                    value={newService.title}
+                    onChange={(e) => setNewService({ ...newService, title: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="service-description">Description *</Label>
+                  <Textarea
+                    id="service-description"
+                    placeholder="Brief description of the service"
+                    value={newService.description}
+                    onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="service-category">Category</Label>
+                  <Select value={newService.category} onValueChange={(value) => setNewService({ ...newService, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="health">Health</SelectItem>
+                      <SelectItem value="finance">Finance</SelectItem>
+                      <SelectItem value="identity">Identity</SelectItem>
+                      <SelectItem value="business">Business</SelectItem>
+                      <SelectItem value="travel">Travel</SelectItem>
+                      <SelectItem value="transport">Transport</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="service-logo">Service Logo (Optional)</Label>
+                  <Input
+                    id="service-logo"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setNewService({ ...newService, logo: e.target.files?.[0] || null })}
+                  />
+                  <p className="text-xs text-muted-foreground">Upload a logo image for the service card</p>
+                </div>
+                <Button 
+                  className="w-full bg-[#006A4E] hover:bg-[#005a3e]"
+                  onClick={() => {
+                    if (!newService.title || !newService.description) {
+                      toast.error('Please fill in title and description');
+                      return;
+                    }
+                    serviceMutation.mutate();
+                  }}
+                  disabled={serviceMutation.isPending}
+                >
+                  {serviceMutation.isPending ? 'Creating...' : 'Add Service'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Add Huduma Centre Form */}
+            <Card className="border-2 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-[#006A4E]" />
+                  Add New Huduma Centre
+                </CardTitle>
+                <CardDescription>
+                  Add a new Huduma Centre location to the database
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="huduma-name">Centre Name *</Label>
+                    <Input
+                      id="huduma-name"
+                      placeholder="e.g., Huduma Centre Nairobi West"
+                      value={newHuduma.name}
+                      onChange={(e) => setNewHuduma({ ...newHuduma, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="huduma-county">County *</Label>
+                    <Input
+                      id="huduma-county"
+                      placeholder="e.g., Nairobi"
+                      value={newHuduma.county}
+                      onChange={(e) => setNewHuduma({ ...newHuduma, county: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="huduma-sub-county">Sub-County</Label>
+                    <Input
+                      id="huduma-sub-county"
+                      placeholder="e.g., Westlands"
+                      value={newHuduma.sub_county}
+                      onChange={(e) => setNewHuduma({ ...newHuduma, sub_county: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="huduma-town">Town</Label>
+                    <Input
+                      id="huduma-town"
+                      placeholder="e.g., Westlands"
+                      value={newHuduma.town}
+                      onChange={(e) => setNewHuduma({ ...newHuduma, town: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="huduma-latitude">Latitude</Label>
+                    <Input
+                      id="huduma-latitude"
+                      type="number"
+                      step="any"
+                      placeholder="e.g., -1.2921"
+                      value={newHuduma.latitude}
+                      onChange={(e) => setNewHuduma({ ...newHuduma, latitude: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="huduma-longitude">Longitude</Label>
+                    <Input
+                      id="huduma-longitude"
+                      type="number"
+                      step="any"
+                      placeholder="e.g., 36.8219"
+                      value={newHuduma.longitude}
+                      onChange={(e) => setNewHuduma({ ...newHuduma, longitude: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="huduma-phone">Contact Phone</Label>
+                    <Input
+                      id="huduma-phone"
+                      placeholder="+254 20 2222222"
+                      value={newHuduma.contact_phone}
+                      onChange={(e) => setNewHuduma({ ...newHuduma, contact_phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="huduma-email">Contact Email</Label>
+                    <Input
+                      id="huduma-email"
+                      type="email"
+                      placeholder="centre@hudumakenya.go.ke"
+                      value={newHuduma.contact_email}
+                      onChange={(e) => setNewHuduma({ ...newHuduma, contact_email: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <Button 
+                  className="w-full bg-[#006A4E] hover:bg-[#005a3e]"
+                  onClick={() => {
+                    if (!newHuduma.name || !newHuduma.county) {
+                      toast.error('Please fill in name and county');
+                      return;
+                    }
+                    hudumaMutation.mutate();
+                  }}
+                  disabled={hudumaMutation.isPending}
+                >
+                  {hudumaMutation.isPending ? 'Creating...' : 'Add Huduma Centre'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* System Settings */}
             <Card className="border-2 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

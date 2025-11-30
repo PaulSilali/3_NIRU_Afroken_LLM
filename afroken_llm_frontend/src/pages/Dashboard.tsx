@@ -21,14 +21,80 @@ export default function Dashboard() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [countyFilter, setCountyFilter] = useState<string>('all');
   
-  const { data: metrics, isLoading } = useQuery({
-    queryKey: ['metrics'],
-    queryFn: () => getMetrics(),
+  const { data: metrics, isLoading, error } = useQuery({
+    queryKey: ['metrics', countyFilter, timeRange],
+    queryFn: () => getMetrics(countyFilter === 'all' ? undefined : countyFilter, timeRange),
+    retry: 1,
+    staleTime: 0, // Always fresh for smooth filtering
+    gcTime: 0, // Don't cache to ensure fresh data on filter change
   });
 
+  // Metrics are already filtered by getMetrics, so use directly
+  const filteredTotalQueries = metrics?.totalQueries || 0;
+  const filteredEscalations = metrics?.escalations || 0;
+  const filteredAvgSatisfaction = metrics?.satisfactionRate || 0;
+  const filteredMetrics = metrics;
+
   const handleExportData = () => {
-    toast.success('Data export started. Download will begin shortly.');
-    // In a real app, trigger CSV download
+    if (!metrics) {
+      toast.error('No data available to export');
+      return;
+    }
+
+    try {
+      // Create CSV content
+      const csvRows: string[] = [];
+      
+      // Header
+      csvRows.push('Dashboard Metrics Export');
+      csvRows.push(`Generated: ${new Date().toLocaleString()}`);
+      csvRows.push(`Time Range: ${timeRange}`);
+      csvRows.push(`County Filter: ${countyFilter === 'all' ? 'All Counties' : countyFilter}`);
+      csvRows.push('');
+      
+      // Summary metrics
+      csvRows.push('Summary Metrics');
+      csvRows.push('Metric,Value');
+      csvRows.push(`Total Queries,${filteredTotalQueries.toLocaleString()}`);
+      csvRows.push(`Satisfaction Rate,${filteredAvgSatisfaction}%`);
+      csvRows.push(`Average Response Time,${metrics.avgResponseTime}s`);
+      csvRows.push(`Escalations,${filteredEscalations.toLocaleString()}`);
+      csvRows.push('');
+      
+      // Top Intents
+      csvRows.push('Top Intents');
+      csvRows.push('Intent,Count,Percentage');
+      metrics.topIntents.forEach(intent => {
+        csvRows.push(`${intent.intent},${intent.count},${intent.percentage}%`);
+      });
+      csvRows.push('');
+      
+      // County Summary
+      csvRows.push('County Summary');
+      csvRows.push('County,Queries,Satisfaction %,Escalations');
+      (metrics?.countySummary || []).forEach(county => {
+        csvRows.push(`${county.countyName},${county.queries},${county.satisfaction},${county.escalations}`);
+      });
+      
+      // Create blob and download
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `dashboard-export-${timeRange}-${countyFilter === 'all' ? 'all-counties' : countyFilter}-${Date.now()}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Data exported successfully!');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export data. Please try again.');
+    }
   };
 
   if (isLoading) {
@@ -42,6 +108,51 @@ export default function Dashboard() {
               {[1, 2, 3, 4].map((i) => (
                 <Skeleton key={i} className="h-32" />
               ))}
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Dashboard error:', error);
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="space-y-6">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Dashboard</h2>
+              <p className="text-muted-foreground">
+                {error instanceof Error ? error.message : 'Failed to load dashboard data. Please try again later.'}
+              </p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="mt-4"
+              >
+                Reload Page
+              </Button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!metrics) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="space-y-6">
+            <div className="bg-muted/10 border border-border rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-2">No Data Available</h2>
+              <p className="text-muted-foreground">
+                Dashboard data is not available. Please try again later.
+              </p>
             </div>
           </div>
         </main>
@@ -118,7 +229,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <MetricCard
               title={t('dashboard.metrics.totalQueries')}
-              value={metrics?.totalQueries.toLocaleString() || '0'}
+              value={filteredTotalQueries.toLocaleString()}
               change={12}
               trend="up"
               icon={MessageSquare}
@@ -127,7 +238,7 @@ export default function Dashboard() {
             />
             <MetricCard
               title={t('dashboard.metrics.satisfaction')}
-              value={`${metrics?.satisfactionRate || 0}%`}
+              value={`${filteredAvgSatisfaction}%`}
               change={3}
               trend="up"
               icon={ThumbsUp}
@@ -145,7 +256,7 @@ export default function Dashboard() {
             />
             <MetricCard
               title={t('dashboard.metrics.escalations')}
-              value={metrics?.escalations.toLocaleString() || '0'}
+              value={filteredEscalations.toLocaleString()}
               change={-15}
               trend="down"
               icon={AlertTriangle}
@@ -159,7 +270,8 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="font-display text-2xl">{t('dashboard.charts.topIntents')}</CardTitle>
               <CardDescription className="text-base">
-                Most common citizen questions and requests (total query counts over the selected period)
+                Most common citizen questions and requests ({timeRange === '7d' ? 'last 7 days' : timeRange === '30d' ? 'last 30 days' : 'last 90 days'})
+                {countyFilter !== 'all' && ` - ${countyFilter} County`}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -196,7 +308,10 @@ export default function Dashboard() {
           </Card>
 
           {/* County Map */}
-          <CountyMap />
+          <CountyMap 
+            filteredCounty={countyFilter === 'all' ? undefined : countyFilter}
+            counties={filteredMetrics?.countySummary}
+          />
 
           {/* Additional Info */}
           <Card className="border-2 shadow-lg relative overflow-hidden">

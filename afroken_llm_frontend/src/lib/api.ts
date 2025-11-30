@@ -128,35 +128,81 @@ export async function postFeedback(feedback: FeedbackRequest): Promise<void> {
   // In a real app, this would send to the backend
 }
 
-export async function getMetrics(county?: string): Promise<DashboardMetrics> {
-  await delay(800);
+// Dummy data for demo purposes - comprehensive dataset
+const DUMMY_METRICS_BASE: DashboardMetrics = {
+  totalQueries: 19220,
+  satisfactionRate: 84,
+  avgResponseTime: 2.3,
+  escalations: 342,
+  topIntents: [
+    { intent: 'NHIF Registration', count: 1234, percentage: 28 },
+    { intent: 'KRA PIN Application', count: 987, percentage: 22 },
+    { intent: 'Huduma Appointments', count: 876, percentage: 20 },
+    { intent: 'Tax Returns Filing', count: 654, percentage: 15 },
+    { intent: 'ID Renewal', count: 543, percentage: 12 },
+  ],
+  countySummary: countiesData.map(c => ({
+    ...c,
+    coordinates: c.coordinates as [number, number]
+  })),
+};
 
+// Time range multipliers for realistic variation
+const TIME_RANGE_MULTIPLIERS = {
+  '7d': { queries: 0.25, escalations: 0.25 },
+  '30d': { queries: 1.0, escalations: 1.0 },
+  '90d': { queries: 2.8, escalations: 2.8 },
+};
+
+// Generate dummy metrics based on filters (instant, no API calls)
+export function getDummyMetrics(county?: string, timeRange: '7d' | '30d' | '90d' = '30d'): DashboardMetrics {
+  // Filter counties
   const filteredCounties = county
     ? countiesData.filter((c) => c.countyName.toLowerCase() === county.toLowerCase())
     : countiesData;
 
+  // Calculate totals from filtered counties
   const totalQueries = filteredCounties.reduce((sum, c) => sum + c.queries, 0);
   const totalEscalations = filteredCounties.reduce((sum, c) => sum + c.escalations, 0);
-  const avgSatisfaction =
-    filteredCounties.reduce((sum, c) => sum + c.satisfaction, 0) / filteredCounties.length;
+  const avgSatisfaction = filteredCounties.length > 0
+    ? Math.round(filteredCounties.reduce((sum, c) => sum + c.satisfaction, 0) / filteredCounties.length)
+    : 84;
+
+  // Apply time range multiplier
+  const multiplier = TIME_RANGE_MULTIPLIERS[timeRange];
+  const adjustedQueries = Math.round(totalQueries * multiplier.queries);
+  const adjustedEscalations = Math.round(totalEscalations * multiplier.escalations);
+
+  // Adjust top intents based on time range
+  const intentMultiplier = multiplier.queries;
+  const adjustedTopIntents = DUMMY_METRICS_BASE.topIntents.map(intent => ({
+    ...intent,
+    count: Math.round(intent.count * intentMultiplier),
+    percentage: intent.percentage, // Keep percentages consistent
+  }));
 
   return {
-    totalQueries,
-    satisfactionRate: Math.round(avgSatisfaction),
+    totalQueries: adjustedQueries,
+    satisfactionRate: avgSatisfaction,
     avgResponseTime: 2.3,
-    escalations: totalEscalations,
-    topIntents: [
-      { intent: 'NHIF Registration', count: 1234, percentage: 28 },
-      { intent: 'KRA PIN Application', count: 987, percentage: 22 },
-      { intent: 'Huduma Appointments', count: 876, percentage: 20 },
-      { intent: 'Tax Returns Filing', count: 654, percentage: 15 },
-      { intent: 'ID Renewal', count: 543, percentage: 12 },
-    ],
+    escalations: adjustedEscalations,
+    topIntents: adjustedTopIntents,
     countySummary: filteredCounties.map(c => ({
       ...c,
       coordinates: c.coordinates as [number, number]
     })),
   };
+}
+
+// Simplified getMetrics - uses dummy data only for smooth filtering
+export async function getMetrics(county?: string, timeRange: '7d' | '30d' | '90d' = '30d'): Promise<DashboardMetrics> {
+  // Use dummy data only - instant response, no API delays
+  return new Promise((resolve) => {
+    // Simulate minimal delay for smooth UX (50ms)
+    setTimeout(() => {
+      resolve(getDummyMetrics(county, timeRange));
+    }, 50);
+  });
 }
 
 // Admin API functions
@@ -199,4 +245,64 @@ export async function getJobStatus(jobId: string) {
   const response = await fetch(`${API_BASE_URL}/api/v1/admin/jobs/${jobId}`);
   if (!response.ok) throw new Error('Failed to fetch job status');
   return response.json();
+}
+
+// Services Management
+export async function getServices() {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/services`);
+  if (!response.ok) throw new Error('Failed to fetch services');
+  return response.json();
+}
+
+export async function createService(formData: FormData) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/services`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to create service');
+  }
+  return response.json();
+}
+
+// Huduma Centres Management
+export async function getHudumaCentres() {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/huduma-centres`);
+  if (!response.ok) throw new Error('Failed to fetch Huduma Centres');
+  return response.json();
+}
+
+export async function createHudumaCentre(data: {
+  name: string;
+  county: string;
+  sub_county?: string;
+  town?: string;
+  latitude?: number;
+  longitude?: number;
+  contact_phone?: string;
+  contact_email?: string;
+}) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/huduma-centres`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to create Huduma Centre');
+  }
+  return response.json();
+}
+
+// Chat Metrics (for dual implementation)
+export async function getChatMetrics() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/metrics`);
+    if (!response.ok) throw new Error('Failed to fetch metrics');
+    return response.json();
+  } catch (error) {
+    console.error('Failed to fetch chat metrics:', error);
+    return null; // Return null to indicate fallback to dummy data
+  }
 }
