@@ -43,6 +43,9 @@ app = FastAPI(title="AfroKen LLM API", version="0.1.0")
 
 
 # Register CORS middleware so that browsers can call this API from web frontends.
+# Get ENV setting, default to "development" if not set
+env = getattr(settings, 'ENV', 'development')
+
 app.add_middleware(
     CORSMiddleware,
     # Allow any origin in development, but lock down to a specific domain in production.
@@ -51,8 +54,9 @@ app.add_middleware(
         "http://localhost:3000",  # Alternative port
         "http://localhost:5174",  # Vite alternative
         "http://localhost:8080",  # Alternative frontend port
+        "http://127.0.0.1:8080",  # Alternative frontend port (127.0.0.1)
         "*"  # Allow all in development
-    ] if settings.ENV == "development" else ["https://your.gov.domain"],
+    ] if env == "development" or env is None else ["https://your.gov.domain"],
     # Allow cookies / auth headers to be sent cross-origin if needed.
     allow_credentials=True,
     # Allow all HTTP methods (GET, POST, PUT, etc.).

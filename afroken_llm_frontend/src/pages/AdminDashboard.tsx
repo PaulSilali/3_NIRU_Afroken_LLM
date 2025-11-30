@@ -53,9 +53,11 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Header } from '@/components/Header';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -74,7 +76,18 @@ async function uploadPDF(file: File, category?: string) {
     body: formData,
   });
 
-  if (!response.ok) throw new Error('Upload failed');
+  if (!response.ok) {
+    // Try to extract error message from response
+    let errorMessage = 'Upload failed';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      // If response is not JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
   return response.json();
 }
 
@@ -85,7 +98,18 @@ async function scrapeURL(url: string, category?: string) {
     body: JSON.stringify({ url, category }),
   });
 
-  if (!response.ok) throw new Error('Scraping failed');
+  if (!response.ok) {
+    // Try to extract error message from response
+    let errorMessage = 'Scraping failed';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      // If response is not JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
   return response.json();
 }
 
@@ -102,6 +126,30 @@ async function getJobs(status?: string, jobType?: string) {
 async function getJobStatus(jobId: string) {
   const response = await fetch(`${API_BASE_URL}/api/v1/admin/jobs/${jobId}`);
   if (!response.ok) throw new Error('Failed to fetch job status');
+  return response.json();
+}
+
+async function deleteJob(jobId: string) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/jobs/${jobId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to delete job');
+  }
+  return response.json();
+}
+
+async function deleteJobs(jobIds: string[]) {
+  const response = await fetch(`${API_BASE_URL}/api/v1/admin/jobs`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(jobIds),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to delete jobs');
+  }
   return response.json();
 }
 
@@ -180,6 +228,8 @@ export default function AdminDashboard() {
   const [urlCategory, setUrlCategory] = useState('');
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   const [selectedCounty, setSelectedCounty] = useState('all');
+  const [selectedJobs, setSelectedJobs] = useState<Set<string>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceFormOpen, setServiceFormOpen] = useState(false);
   const [hudumaFormOpen, setHudumaFormOpen] = useState(false);
   const [newService, setNewService] = useState({ title: '', description: '', category: 'general', logo: null as File | null });
@@ -225,10 +275,16 @@ export default function AdminDashboard() {
     onSuccess: (data) => {
       toast.success('PDF upload started! Check processing status.');
       queryClient.invalidateQueries({ queryKey: ['admin-jobs'] });
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      // Reset form: clear file input and category
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      setPdfCategory(''); // Reset category dropdown
     },
-    onError: (error) => {
-      toast.error(`Upload failed: ${error.message}`);
+    onError: (error: Error) => {
+      // Display the error message (which now includes backend instructions)
+      const message = error.message || 'Upload failed';
+      toast.error(message, { duration: 10000 }); // Show for 10 seconds so user can read it
     },
   });
 
@@ -240,8 +296,10 @@ export default function AdminDashboard() {
       setUrlToScrape('');
       queryClient.invalidateQueries({ queryKey: ['admin-jobs'] });
     },
-    onError: (error) => {
-      toast.error(`Scraping failed: ${error.message}`);
+    onError: (error: Error) => {
+      // Display the error message (which now includes backend instructions)
+      const message = error.message || 'Scraping failed';
+      toast.error(message, { duration: 10000 }); // Show for 10 seconds so user can read it
     },
   });
 
@@ -287,6 +345,46 @@ export default function AdminDashboard() {
       toast.error(`Failed to create Huduma Centre: ${error.message}`);
     },
   });
+
+  const deleteJobsMutation = useMutation({
+    mutationFn: (jobIds: string[]) => deleteJobs(jobIds),
+    onSuccess: (data) => {
+      toast.success(`Deleted ${data.deleted_count} job(s) successfully!`);
+      setSelectedJobs(new Set());
+      queryClient.invalidateQueries({ queryKey: ['admin-jobs'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete jobs: ${error.message}`);
+    },
+  });
+
+  const handleSelectJob = (jobId: string) => {
+    const newSelected = new Set(selectedJobs);
+    if (newSelected.has(jobId)) {
+      newSelected.delete(jobId);
+    } else {
+      newSelected.add(jobId);
+    }
+    setSelectedJobs(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedJobs.size === jobsData?.jobs?.length) {
+      setSelectedJobs(new Set());
+    } else {
+      setSelectedJobs(new Set(jobsData?.jobs?.map((j: any) => j.job_id) || []));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedJobs.size === 0) return;
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    deleteJobsMutation.mutate(Array.from(selectedJobs));
+    setDeleteDialogOpen(false);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -346,8 +444,9 @@ export default function AdminDashboard() {
         completed: jobsData.completed_jobs || 0,
         failed: jobsData.failed_jobs || 0,
         pending: jobsData.pending_jobs || 0,
+        processing: (jobsData.jobs || []).filter((j: any) => j.status === 'processing').length,
       }
-    : { total: 0, completed: 0, failed: 0, pending: 0 };
+    : { total: 0, completed: 0, failed: 0, pending: 0, processing: 0 };
 
   const totalQueries = 19220;
   const avgSatisfaction = 84;
@@ -809,23 +908,64 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="gap-1">
-                      <Activity className="w-3 h-3" />
+                      <Clock className="w-3 h-3" />
                       {stats.pending} Pending
+                    </Badge>
+                    <Badge variant="secondary" className="gap-1">
+                      <RefreshCw className="w-3 h-3" />
+                      {stats.processing} Processing
                     </Badge>
                     <Badge variant="default" className="gap-1 bg-green-600">
                       <CheckCircle2 className="w-3 h-3" />
                       {stats.completed} Completed
                     </Badge>
+                    {stats.failed > 0 && (
+                      <Badge variant="destructive" className="gap-1">
+                        <XCircle className="w-3 h-3" />
+                        {stats.failed} Failed
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
+                {selectedJobs.size > 0 && (
+                  <div className="mb-4 flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <span className="text-sm font-medium">
+                      {selectedJobs.size} job(s) selected
+                    </span>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteSelected}
+                      disabled={deleteJobsMutation.isPending}
+                    >
+                      {deleteJobsMutation.isPending ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Selected
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
                 {jobsLoading ? (
                   <div className="text-center py-8 text-muted-foreground">Loading jobs...</div>
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedJobs.size > 0 && selectedJobs.size === jobsData?.jobs?.length}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
                         <TableHead>Job ID</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Source</TableHead>
@@ -836,82 +976,122 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {jobsData?.jobs?.map((job: any) => (
-                        <TableRow key={job.job_id}>
-                          <TableCell className="font-mono text-xs">
-                            {job.job_id.substring(0, 8)}...
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {job.job_type === 'pdf_upload' ? (
-                                <FileText className="w-3 h-3 mr-1" />
-                              ) : (
-                                <LinkIcon className="w-3 h-3 mr-1" />
-                              )}
-                              {job.job_type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">{job.source}</TableCell>
-                          <TableCell>{getStatusBadge(job.status)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Progress value={job.progress} className="w-20" />
-                              <span className="text-xs">{job.progress}%</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{job.documents_processed || 0}</TableCell>
-                          <TableCell>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setSelectedJob(job.job_id)}
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle>Job Details</DialogTitle>
-                                  <DialogDescription>
-                                    {job.job_id}
-                                  </DialogDescription>
-                                </DialogHeader>
-                                {jobStatus && (
-                                  <div className="space-y-4">
-                                    <div>
-                                      <Label>Status</Label>
-                                      <div className="mt-1">{getStatusBadge(jobStatus.status)}</div>
-                                    </div>
-                                    <div>
-                                      <Label>Progress</Label>
-                                      <Progress value={jobStatus.progress} className="mt-1" />
-                                    </div>
-                                    {jobStatus.error_message && (
-                                      <div className="p-3 bg-red-50 dark:bg-red-950 rounded-md">
-                                        <p className="text-sm text-red-900 dark:text-red-100">
-                                          {jobStatus.error_message}
-                                        </p>
-                                      </div>
-                                    )}
-                                    {jobStatus.result && (
-                                      <div className="p-3 bg-green-50 dark:bg-green-950 rounded-md">
-                                        <pre className="text-xs overflow-auto">
-                                          {JSON.stringify(jobStatus.result, null, 2)}
-                                        </pre>
-                                      </div>
-                                    )}
-                                  </div>
+                      {jobsData?.jobs && jobsData.jobs.length > 0 ? (
+                        jobsData.jobs.map((job: any) => (
+                          <TableRow key={job.job_id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedJobs.has(job.job_id)}
+                                onCheckedChange={() => handleSelectJob(job.job_id)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {job.job_id.substring(0, 8)}...
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {job.job_type === 'pdf_upload' ? (
+                                  <FileText className="w-3 h-3 mr-1" />
+                                ) : (
+                                  <LinkIcon className="w-3 h-3 mr-1" />
                                 )}
+                                {job.job_type.replace('_', ' ')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="max-w-xs truncate" title={job.source}>
+                              {job.source}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(job.status)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Progress value={job.progress} className="w-20" />
+                                <span className="text-xs">{job.progress}%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{job.documents_processed || 0}</TableCell>
+                            <TableCell>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedJob(job.job_id)}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-2xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Job Details</DialogTitle>
+                                    <DialogDescription>
+                                      {job.job_id}
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  {jobStatus && (
+                                    <div className="space-y-4">
+                                      <div>
+                                        <Label>Status</Label>
+                                        <div className="mt-1">{getStatusBadge(jobStatus.status)}</div>
+                                      </div>
+                                      <div>
+                                        <Label>Progress</Label>
+                                        <Progress value={jobStatus.progress} className="mt-1" />
+                                      </div>
+                                      {jobStatus.error_message && (
+                                        <div className="p-3 bg-red-50 dark:bg-red-950 rounded-md">
+                                          <p className="text-sm text-red-900 dark:text-red-100">
+                                            {jobStatus.error_message}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {jobStatus.result && (
+                                        <div className="p-3 bg-green-50 dark:bg-green-950 rounded-md">
+                                          <pre className="text-xs overflow-auto">
+                                            {JSON.stringify(jobStatus.result, null, 2)}
+                                          </pre>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                               </DialogContent>
-                            </Dialog>
+                              </Dialog>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                            No processing jobs found
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 )}
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        You are about to delete {selectedJobs.size} job(s). This action cannot be undone.
+                        {selectedJobs.size === 1 && jobsData?.jobs?.find((j: any) => selectedJobs.has(j.job_id)) && (
+                          <span className="block mt-2 text-sm font-medium">
+                            Job: {jobsData.jobs.find((j: any) => selectedJobs.has(j.job_id))?.source}
+                          </span>
+                        )}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={confirmDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
             </Card>
           </TabsContent>

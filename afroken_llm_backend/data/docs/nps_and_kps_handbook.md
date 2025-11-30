@@ -1,11 +1,11 @@
- ---
+---
 title: "Nps And Kps Handbook"
 filename: "nps_and_kps_handbook.md"
-category: "service_workflow"
+category: "test"
 jurisdiction: "Kenya"
 lang: "en"
-source: "PDF: NPS_And_KPS_HandBook.pdf"
-last_updated: "2025-11-29"
+source: "PDF Upload: NPS_And_KPS_HandBook.pdf"
+last_updated: "2025-11-30"
 tags: ['pdf_import', 'handbook', 'sha', 'nhif', 'health']
 ---
 
@@ -1146,4 +1146,4 @@ info@nhif.or.ke
 www.nhif.or.ke
 
 Sources:
-- PDF: NPS_And_KPS_HandBook.pdf
+- PDF Upload: NPS_And_KPS_HandBook.pdf

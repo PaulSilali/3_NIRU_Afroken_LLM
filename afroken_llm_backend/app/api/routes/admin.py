@@ -10,12 +10,12 @@ from datetime import datetime
 from typing import Optional
 import uuid
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Body
 from sqlalchemy import text
 from sqlmodel import Session, select
 
 from app.utils.storage import upload_bytes, ensure_bucket
-from app.db import engine
+from app.db import engine, is_db_available
 from app.utils.embeddings import get_embedding
 from app.models import ProcessingJob, Document
 from app.schemas import (
@@ -26,17 +26,47 @@ from app.schemas import (
 import sys
 backend_dir = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(backend_dir))
+
+# Import PDF functions separately to avoid failing on missing dependencies (like readability)
+_extract_text_from_pdf = None
+_create_markdown_from_pdf = None
+
 try:
     from scripts.rag.pdf_to_markdown import extract_text_from_pdf, create_markdown_from_pdf
+    _extract_text_from_pdf = extract_text_from_pdf
+    _create_markdown_from_pdf = create_markdown_from_pdf
+    print("✅ PDF processing functions imported successfully")
+except ImportError as e:
+    print(f"Warning: Could not import PDF functions from scripts: {e}")
+    # Try direct import as fallback
+    try:
+        import pdfplumber
+        def _extract_text_from_pdf_fallback(path):
+            text = ""
+            with pdfplumber.open(path) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+            return text
+        _extract_text_from_pdf = _extract_text_from_pdf_fallback
+        print("✅ Using pdfplumber directly as fallback")
+    except ImportError:
+        print("❌ PDF processing libraries not available")
+        def _extract_text_from_pdf_fallback(path):
+            raise NotImplementedError("PDF processing not available. Install: pip install pdfplumber pypdfium2")
+        _extract_text_from_pdf = _extract_text_from_pdf_fallback
+
+# Use the imported or fallback functions
+extract_text_from_pdf = _extract_text_from_pdf
+create_markdown_from_pdf = _create_markdown_from_pdf
+
+# Import other RAG functions (these may fail if readability is missing, but that's OK for PDF uploads)
+try:
     from scripts.rag.fetch_and_extract import fetch_url, extract_text, check_robots_allowed
     from scripts.rag.chunk_and_write_md import chunk_text, write_markdown_chunk, detect_category
 except ImportError as e:
-    print(f"Warning: Could not import RAG scripts: {e}")
-    # Define fallback functions
-    def extract_text_from_pdf(path):
-        raise NotImplementedError("PDF processing not available")
-    def create_markdown_from_pdf(*args, **kwargs):
-        raise NotImplementedError("PDF processing not available")
+    print(f"Warning: Could not import other RAG scripts (URL scraping may not work): {e}")
     def fetch_url(url):
         raise NotImplementedError("URL fetching not available")
     def extract_text(html, url):
@@ -47,7 +77,7 @@ except ImportError as e:
         return [text]
     def write_markdown_chunk(*args, **kwargs):
         return None
-    def detect_category(text):
+    def detect_category(url, title, text):
         return "scraped"
 
 router = APIRouter()
@@ -71,13 +101,20 @@ async def process_pdf_background(
                 session.commit()
         
         # Extract text from PDF
-        text_content = extract_text_from_pdf(file_path)
+        if not _extract_text_from_pdf:
+            raise Exception("PDF processing not available. Install: pip install pdfplumber pypdfium2")
+        text_content = _extract_text_from_pdf(file_path)
+        
+        if not text_content or len(text_content.strip()) == 0:
+            raise Exception("PDF extraction returned empty content. The PDF might be corrupted or image-only.")
         
         # Update progress
+        from datetime import datetime
         with Session(engine) as session:
             job = session.get(ProcessingJob, job_id)
             if job:
                 job.progress = 50
+                job.updated_at = datetime.utcnow()
                 session.add(job)
                 session.commit()
         
@@ -101,23 +138,51 @@ async def process_pdf_background(
         docs_dir.mkdir(parents=True, exist_ok=True)
         
         # Create markdown file
-        try:
-            md_filename = create_markdown_from_pdf(
-                pdf_path=file_path,
-                output_dir=docs_dir,
-                title=None,  # Auto-generate from filename
-                category=category,
-                source=f"PDF Upload: {filename}",
-                tags=None
-            )
-        except Exception as e:
-            print(f"Warning: Markdown creation failed: {e}")
-            md_filename = None
+        md_filename = None
+        if _create_markdown_from_pdf:
+            try:
+                md_filename = _create_markdown_from_pdf(
+                    pdf_path=file_path,
+                    output_dir=docs_dir,
+                    title=None,  # Auto-generate from filename
+                    category=category,
+                    source=f"PDF Upload: {filename}",
+                    tags=None
+                )
+            except Exception as e:
+                print(f"Warning: Markdown creation failed: {e}")
+                import traceback
+                traceback.print_exc()
+                md_filename = None
+        else:
+            # Create simple markdown if function not available
+            try:
+                md_filename = docs_dir / f"{Path(filename).stem}.md"
+                with open(md_filename, 'w', encoding='utf-8') as f:
+                    f.write(f"---\n")
+                    f.write(f"title: {Path(filename).stem}\n")
+                    f.write(f"category: {category or 'general'}\n")
+                    f.write(f"source: PDF Upload: {filename}\n")
+                    f.write(f"---\n\n")
+                    f.write(text_content)
+                print(f"Created simple markdown: {md_filename}")
+            except Exception as e:
+                print(f"Warning: Failed to create markdown: {e}")
+                md_filename = None
         
         # Store in PostgreSQL with embedding
         with Session(engine) as session:
-            # Generate embedding
-            emb = asyncio.run(get_embedding(text_content[:10000]))  # Truncate for embedding
+            # Generate embedding (use await since we're in async function)
+            try:
+                emb = await get_embedding(text_content[:10000])  # Truncate for embedding
+            except RuntimeError as e:
+                # If event loop issue, use simple fallback
+                print(f"Warning: Embedding generation failed, using fallback: {e}")
+                import numpy as np
+                # Simple deterministic embedding
+                vec = [float((ord(c) % 100) / 100.0) for c in text_content[:384]]
+                vec = (vec + [0.0] * 384)[:384]
+                emb = np.array(vec)
             
             # Create document record
             doc = Document(
@@ -135,33 +200,45 @@ async def process_pdf_background(
             # Store as JSON string if pgvector not available (TEXT column), otherwise as vector
             if "postgresql" in str(engine.url):
                 try:
-                    # Try pgvector first
-                    update_q = text(
-                        "UPDATE document SET embedding = :e::vector WHERE id = :id"
-                    )
-                    session.execute(update_q, {"e": emb, "id": doc.id})
-                    session.commit()
-                except Exception:
-                    # Fallback to TEXT (JSON string) if pgvector not available
                     import json
-                    emb_json = json.dumps(emb.tolist() if hasattr(emb, 'tolist') else list(emb))
+                    emb_list = emb.tolist() if hasattr(emb, 'tolist') else list(emb)
+                    emb_json = json.dumps(emb_list)
+                    # Use proper SQL parameter binding
                     update_q = text(
-                        "UPDATE document SET embedding = :e::text WHERE id = :id"
+                        "UPDATE document SET embedding = :emb::text WHERE id = :doc_id"
                     )
-                    session.execute(update_q, {"e": emb_json, "id": doc.id})
+                    session.execute(update_q, {"emb": emb_json, "doc_id": doc.id})
                     session.commit()
+                except Exception as e:
+                    # If embedding update fails, document is still saved (just without embedding)
+                    print(f"Warning: Failed to update embedding: {e}")
+                    # Document is still created, just without embedding
+        
+        # Save PDF permanently to data/pdfs/ before cleanup
+        pdfs_dir = backend_dir / 'data' / 'pdfs'
+        pdfs_dir.mkdir(parents=True, exist_ok=True)
+        permanent_pdf_path = pdfs_dir / filename
+        
+        try:
+            import shutil
+            shutil.copy2(file_path, permanent_pdf_path)
+        except Exception as e:
+            print(f"Warning: Failed to save PDF permanently: {e}")
         
         # Update job as completed
+        from datetime import datetime
         with Session(engine) as session:
             job = session.get(ProcessingJob, job_id)
             if job:
                 job.status = "completed"
                 job.progress = 100
                 job.documents_processed = 1
+                job.updated_at = datetime.utcnow()
                 job.result = json.dumps({
                     "document_id": doc.id,
                     "markdown_file": str(md_filename),
-                    "minio_path": minio_path
+                    "minio_path": minio_path,
+                    "pdf_path": str(permanent_pdf_path)
                 })
                 session.add(job)
                 session.commit()
@@ -189,11 +266,13 @@ async def scrape_url_background(
     """Background task to scrape URL."""
     try:
         # Update job status
+        from datetime import datetime
         with Session(engine) as session:
             job = session.get(ProcessingJob, job_id)
             if job:
                 job.status = "processing"
                 job.progress = 10
+                job.updated_at = datetime.utcnow()
                 session.add(job)
                 session.commit()
         
@@ -216,6 +295,7 @@ async def scrape_url_background(
             job = session.get(ProcessingJob, job_id)
             if job:
                 job.progress = 50
+                job.updated_at = datetime.utcnow()
                 session.add(job)
                 session.commit()
         
@@ -244,8 +324,24 @@ async def scrape_url_background(
         # Auto-detect category if not provided
         detected_category = category or detect_category(url, title, text_content)
         
-        # Extract tags
-        from scripts.rag.chunk_and_write_md import extract_tags, slugify, sanitize_title
+        # Extract tags - with fallback if import fails
+        try:
+            from scripts.rag.chunk_and_write_md import extract_tags, slugify, sanitize_title
+        except ImportError:
+            # Fallback functions if import fails
+            def extract_tags(text, url):
+                return ["scraped", "auto_import"]
+            def slugify(text, max_length=60):
+                import re
+                text = re.sub(r'[^\w\s-]', '', text.lower())
+                text = re.sub(r'[-\s]+', '_', text)
+                return text[:max_length].strip('_-')
+            def sanitize_title(title, max_length=100):
+                title = title.strip()
+                if len(title) > max_length:
+                    title = title[:max_length-3] + '...'
+                return title.replace('"', "'")
+        
         tags = extract_tags(text_content, url)
         
         for i, chunk_text_content in enumerate(chunks):
@@ -336,6 +432,7 @@ async def scrape_url_background(
                 job.status = "completed"
                 job.progress = 100
                 job.documents_processed = len(doc_ids)
+                job.updated_at = datetime.utcnow()
                 job.result = json.dumps({
                     "document_ids": doc_ids,
                     "markdown_files": [str(f) for f in md_files],
@@ -346,11 +443,13 @@ async def scrape_url_background(
                 
     except Exception as e:
         # Mark job as failed
+        from datetime import datetime
         with Session(engine) as session:
             job = session.get(ProcessingJob, job_id)
             if job:
                 job.status = "failed"
                 job.error_message = str(e)
+                job.updated_at = datetime.utcnow()
                 session.add(job)
                 session.commit()
 
@@ -384,17 +483,64 @@ async def upload_pdf(
     with open(temp_path, 'wb') as f:
         f.write(contents)
     
+    # Check if database is available
+    if not is_db_available():
+        # Get more specific error message
+        try:
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+        except Exception as db_error:
+            error_msg = str(db_error)
+            if "password authentication failed" in error_msg.lower():
+                detail_msg = (
+                    "PostgreSQL password authentication failed.\n\n"
+                    "Fix Options:\n"
+                    "1. Create user and database:\n"
+                    "   psql -U postgres\n"
+                    "   CREATE USER afroken WITH PASSWORD '11403775411';\n"
+                    "   CREATE DATABASE afroken_llm_db OWNER afroken;\n\n"
+                    "2. Or use default postgres user in .env:\n"
+                    "   DATABASE_URL=postgresql+psycopg2://postgres:YOUR_PASSWORD@localhost:5432/afroken_llm_db\n\n"
+                    "3. Make sure PostgreSQL is running:\n"
+                    "   Windows: Check Services for PostgreSQL\n"
+                    "   Or: net start postgresql-x64-XX\n\n"
+                    f"Error: {error_msg}"
+                )
+            elif "could not translate host" in error_msg.lower() or "connection refused" in error_msg.lower():
+                detail_msg = (
+                    "PostgreSQL server is not accessible.\n\n"
+                    "Fix Options:\n"
+                    "1. Make sure PostgreSQL is running\n"
+                    "2. Check if port 5432 is open\n"
+                    "3. Verify DATABASE_URL in .env file\n\n"
+                    f"Error: {error_msg}"
+                )
+            else:
+                detail_msg = (
+                    f"Database connection failed: {error_msg}\n\n"
+                    "Run: python setup_postgres.py for setup instructions"
+                )
+        else:
+            detail_msg = "Database not available. Check your DATABASE_URL in .env file."
+        
+        raise HTTPException(status_code=503, detail=detail_msg)
+    
     # Create processing job
-    with Session(engine) as session:
-        job = ProcessingJob(
-            job_type="pdf_upload",
-            status="pending",
-            source=file.filename,
-            progress=0
-        )
-        session.add(job)
-        session.commit()
-        job_id = job.id
+    try:
+        with Session(engine) as session:
+            job = ProcessingJob(
+                job_type="pdf_upload",
+                status="pending",
+                source=file.filename,
+                progress=0
+            )
+            session.add(job)
+            session.commit()
+            job_id = job.id
+    except Exception as e:
+        error_msg = str(e)
+        raise HTTPException(status_code=500, detail=f"Failed to create job: {error_msg}")
     
     # Start background processing
     background_tasks.add_task(
@@ -428,17 +574,35 @@ async def scrape_url(
     5. Store in PostgreSQL with embeddings
     6. Create processing job for tracking
     """
-    # Create processing job
-    with Session(engine) as session:
-        job = ProcessingJob(
-            job_type="url_scrape",
-            status="pending",
-            source=request.url,
-            progress=0
+    # Check if database is available
+    if not is_db_available():
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Database not available. URL scraping requires a database.\n\n"
+                "Quick Fix Options:\n"
+                "1. Use SQLite (easiest): Set DATABASE_URL=sqlite:///./afroken_local.db\n"
+                "2. Fix PostgreSQL: Change 'postgres' to 'localhost' in DATABASE_URL\n"
+                "3. Start PostgreSQL: docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=password postgres\n\n"
+                "See docs/CORS_DB_ERROR_FIX.md for details."
+            )
         )
-        session.add(job)
-        session.commit()
-        job_id = job.id
+    
+    # Create processing job
+    try:
+        with Session(engine) as session:
+            job = ProcessingJob(
+                job_type="url_scrape",
+                status="pending",
+                source=request.url,
+                progress=0
+            )
+            session.add(job)
+            session.commit()
+            job_id = job.id
+    except Exception as e:
+        error_msg = str(e)
+        raise HTTPException(status_code=500, detail=f"Failed to create job: {error_msg}")
     
     # Start background processing
     background_tasks.add_task(
@@ -458,23 +622,32 @@ async def scrape_url(
 @router.get("/jobs/{job_id}", response_model=ProcessingJobResponse)
 async def get_job_status(job_id: str):
     """Get status of a processing job."""
-    with Session(engine) as session:
-        job = session.get(ProcessingJob, job_id)
-        if not job:
-            raise HTTPException(status_code=404, detail="Job not found")
-        
-        return ProcessingJobResponse(
-            job_id=job.id,
-            job_type=job.job_type,
-            status=job.status,
-            progress=job.progress,
-            source=job.source,
-            documents_processed=job.documents_processed,
-            error_message=job.error_message,
-            result=json.loads(job.result) if job.result else None,
-            created_at=job.created_at.isoformat(),
-            updated_at=job.updated_at.isoformat()
-        )
+    try:
+        with Session(engine) as session:
+            job = session.get(ProcessingJob, job_id)
+            if not job:
+                raise HTTPException(status_code=404, detail="Job not found")
+            
+            return ProcessingJobResponse(
+                job_id=job.id,
+                job_type=job.job_type,
+                status=job.status,
+                progress=job.progress,
+                source=job.source,
+                documents_processed=job.documents_processed,
+                error_message=job.error_message,
+                result=json.loads(job.result) if job.result else None,
+                created_at=job.created_at.isoformat(),
+                updated_at=job.updated_at.isoformat()
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = str(e)
+        if "postgres" in error_msg.lower() or "could not translate host" in error_msg.lower() or "operationalerror" in error_msg.lower():
+            raise HTTPException(status_code=503, detail="Database not available. Please check your database connection.")
+        else:
+            raise HTTPException(status_code=500, detail=f"Database error: {error_msg}")
 
 
 @router.get("/jobs", response_model=ProcessingReportResponse)
@@ -488,47 +661,125 @@ async def get_all_jobs(
     
     Returns a report of all jobs with statistics.
     """
-    with Session(engine) as session:
-        # Build query
-        query = select(ProcessingJob)
+    try:
+        with Session(engine) as session:
+            # Build query
+            query = select(ProcessingJob)
+            
+            if status:
+                query = query.where(ProcessingJob.status == status)
+            if job_type:
+                query = query.where(ProcessingJob.job_type == job_type)
+            
+            query = query.order_by(ProcessingJob.created_at.desc()).limit(limit)
+            
+            jobs = session.exec(query).all()
+            
+            # Calculate statistics
+            all_jobs = session.exec(select(ProcessingJob)).all()
+            total = len(list(all_jobs))
+            completed = len([j for j in all_jobs if j.status == "completed"])
+            failed = len([j for j in all_jobs if j.status == "failed"])
+            pending = len([j for j in all_jobs if j.status == "pending"])
+            
+            return ProcessingReportResponse(
+                total_jobs=total,
+                completed_jobs=completed,
+                failed_jobs=failed,
+                pending_jobs=pending,
+                jobs=[
+                    ProcessingJobResponse(
+                        job_id=job.id,
+                        job_type=job.job_type,
+                        status=job.status,
+                        progress=job.progress,
+                        source=job.source,
+                        documents_processed=job.documents_processed,
+                        error_message=job.error_message,
+                        result=json.loads(job.result) if job.result else None,
+                        created_at=job.created_at.isoformat(),
+                        updated_at=job.updated_at.isoformat()
+                    )
+                    for job in jobs
+                ]
+            )
+    except Exception as e:
+        # Database not available - return empty response
+        error_msg = str(e)
+        if "postgres" in error_msg.lower() or "could not translate host" in error_msg.lower() or "operationalerror" in error_msg.lower():
+            # Return empty response when DB is unavailable
+            return ProcessingReportResponse(
+                total_jobs=0,
+                completed_jobs=0,
+                failed_jobs=0,
+                pending_jobs=0,
+                jobs=[]
+            )
+        else:
+            # Re-raise other errors
+            raise HTTPException(status_code=500, detail=f"Database error: {error_msg}")
+
+
+@router.delete("/jobs/{job_id}")
+async def delete_job(job_id: str):
+    """
+    Delete a single processing job by ID.
+    """
+    try:
+        with Session(engine) as session:
+            job = session.get(ProcessingJob, job_id)
+            if not job:
+                raise HTTPException(status_code=404, detail="Job not found")
+            
+            session.delete(job)
+            session.commit()
+            return {"message": "Job deleted successfully", "job_id": job_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = str(e)
+        if "postgres" in error_msg.lower() or "could not translate host" in error_msg.lower() or "operationalerror" in error_msg.lower():
+            raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=500, detail=f"Failed to delete job: {error_msg}")
+
+
+@router.delete("/jobs")
+async def delete_jobs(job_ids: list[str] = Body(...)):
+    """
+    Delete multiple processing jobs by IDs.
+    
+    Request body: ["id1", "id2", ...] (array of job IDs)
+    """
+    try:
+        if not job_ids:
+            raise HTTPException(status_code=400, detail="No job IDs provided")
         
-        if status:
-            query = query.where(ProcessingJob.status == status)
-        if job_type:
-            query = query.where(ProcessingJob.job_type == job_type)
-        
-        query = query.order_by(ProcessingJob.created_at.desc()).limit(limit)
-        
-        jobs = session.exec(query).all()
-        
-        # Calculate statistics
-        all_jobs = session.exec(select(ProcessingJob)).all()
-        total = len(list(all_jobs))
-        completed = len([j for j in all_jobs if j.status == "completed"])
-        failed = len([j for j in all_jobs if j.status == "failed"])
-        pending = len([j for j in all_jobs if j.status == "pending"])
-        
-        return ProcessingReportResponse(
-            total_jobs=total,
-            completed_jobs=completed,
-            failed_jobs=failed,
-            pending_jobs=pending,
-            jobs=[
-                ProcessingJobResponse(
-                    job_id=job.id,
-                    job_type=job.job_type,
-                    status=job.status,
-                    progress=job.progress,
-                    source=job.source,
-                    documents_processed=job.documents_processed,
-                    error_message=job.error_message,
-                    result=json.loads(job.result) if job.result else None,
-                    created_at=job.created_at.isoformat(),
-                    updated_at=job.updated_at.isoformat()
-                )
-                for job in jobs
-            ]
-        )
+        with Session(engine) as session:
+            deleted_count = 0
+            not_found = []
+            
+            for job_id in job_ids:
+                job = session.get(ProcessingJob, job_id)
+                if job:
+                    session.delete(job)
+                    deleted_count += 1
+                else:
+                    not_found.append(job_id)
+            
+            session.commit()
+            
+            return {
+                "message": f"Deleted {deleted_count} job(s)",
+                "deleted_count": deleted_count,
+                "not_found": not_found
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = str(e)
+        if "postgres" in error_msg.lower() or "could not translate host" in error_msg.lower() or "operationalerror" in error_msg.lower():
+            raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=500, detail=f"Failed to delete jobs: {error_msg}")
 
 
 @router.post("/documents/upload")
@@ -612,8 +863,13 @@ async def get_services():
                 })
             return {"services": services}
     except Exception as e:
-        print(f"Error fetching services: {e}")
-        return {"services": []}
+        error_msg = str(e)
+        if "postgres" in error_msg.lower() or "could not translate host" in error_msg.lower() or "operationalerror" in error_msg.lower():
+            # Return empty list when DB is unavailable
+            return {"services": []}
+        else:
+            print(f"Error fetching services: {e}")
+            return {"services": []}
 
 
 @router.post("/services")

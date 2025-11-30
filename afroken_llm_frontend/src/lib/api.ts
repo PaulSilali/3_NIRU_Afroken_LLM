@@ -216,7 +216,18 @@ export async function uploadPDF(file: File, category?: string) {
     body: formData,
   });
 
-  if (!response.ok) throw new Error('Upload failed');
+  if (!response.ok) {
+    // Try to extract error message from response
+    let errorMessage = 'Upload failed';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      // If response is not JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
   return response.json();
 }
 
@@ -227,7 +238,18 @@ export async function scrapeURL(url: string, category?: string) {
     body: JSON.stringify({ url, category }),
   });
 
-  if (!response.ok) throw new Error('Scraping failed');
+  if (!response.ok) {
+    // Try to extract error message from response
+    let errorMessage = 'Scraping failed';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch {
+      // If response is not JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
   return response.json();
 }
 

@@ -23,9 +23,9 @@ class Settings(BaseSettings):
 
     # Full SQLAlchemy / SQLModel database connection string, e.g.
     # "postgresql+psycopg2://user:pass@host:port/dbname"
-    # For local development without DB, defaults to SQLite in-memory
-    DATABASE_URL: Optional[str] = Field(
-        "sqlite:///./afroken_local.db", 
+    # PostgreSQL connection required - no SQLite fallback
+    DATABASE_URL: str = Field(
+        "postgresql+psycopg2://afroken:11403775411@localhost:5432/afroken_llm_db",
         env="DATABASE_URL"
     )
 

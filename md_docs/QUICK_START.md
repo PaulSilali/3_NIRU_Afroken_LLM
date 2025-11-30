@@ -1,110 +1,137 @@
-# Quick Start Guide - Complete System
+# Quick Start Guide
 
-## 🚀 Start Everything in 3 Steps
+## Server Startup
 
-### Step 1: Activate Virtual Environment
-
-```powershell
-# In PowerShell (from afroken_llm_backend directory)
-.\venv\Scripts\Activate.ps1
+### 1. Install Dependencies
+```bash
+cd afroken_llm_backend
+pip install -r requirements.txt
 ```
 
-If you get an execution policy error, run:
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+### 2. Configure Environment
+Ensure `.env` file exists with:
+```env
+DATABASE_URL=postgresql://afroken:11403775411@localhost:5432/afroken_llm_db
+JWT_SECRET=your-secret-key
+ENV=development
 ```
 
-### Step 2: Start Backend (Automatically Builds RAG if Needed)
+**Note**: If using Docker, change `localhost` to `postgres` in DATABASE_URL.
 
-```powershell
-# Option A: Use the PowerShell script (Recommended)
-.\start_backend.ps1
-
-# Option B: Use the bash script (if you have Git Bash/WSL)
-./run_local.sh
-
-# Option C: Manual commands
-python scripts/rag/fetch_and_extract.py config/urls.txt
-python scripts/rag/chunk_and_write_md.py
-python scripts/rag/index_faiss.py
-uvicorn app.main:app --reload --port 8000
+### 3. Initialize Database
+```bash
+# Connect to PostgreSQL and run schema
+psql -U afroken -d afroken_llm_db -f ../afroken_llm_database/create_schema_without_pgvector.sql
 ```
 
-### Step 3: Start Frontend (New Terminal)
+### 4. Start Server
+```bash
+# Windows PowerShell
+$env:PYTHONIOENCODING='utf-8'
+python -m uvicorn app.main:app --reload --port 8000
 
-```powershell
-# Open a NEW terminal/PowerShell window
-cd ..\afroken_llm_frontend
-npm install  # Only if first time
+# Linux/Mac
+PYTHONIOENCODING=utf-8 python -m uvicorn app.main:app --reload --port 8000
+```
+
+### 5. Verify Server
+```bash
+curl http://localhost:8000/health
+# Should return: {"status":"healthy","service":"AfroKen Backend","version":"0.1.0"}
+```
+
+## Frontend Connection
+
+### 1. Start Frontend
+```bash
+cd afroken_llm_frontend
+npm install
 npm run dev
 ```
 
-## ✅ Verification
-
-1. **Backend Health**: Open http://localhost:8000/health
-   - Should return: `{"status": "healthy", ...}`
-
-2. **Backend API Docs**: Open http://localhost:8000/docs
-   - Should show Swagger UI
-
-3. **Frontend**: Open http://localhost:5173 (or port shown in terminal)
-   - Should show the AfroKen frontend
-
-4. **Test Chat**: 
-   - Click chat button
-   - Send: "How do I get a KRA PIN?"
-   - Should get response with citations
-
-## 🔍 Troubleshooting
-
-### "Module not found" errors
-```powershell
-pip install -r requirements.txt
-pip install -r config/requirements_local.txt
+### 2. Configure API URL
+Create `.env` file in frontend directory:
+```env
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-### "RAG index not found" in logs
-The startup script should build it automatically. If not:
-```powershell
-python scripts/rag/fetch_and_extract.py config/urls.txt
-python scripts/rag/chunk_and_write_md.py
-python scripts/rag/index_faiss.py
+### 3. Test Connection
+- Open browser to `http://localhost:5173`
+- Open browser console (F12)
+- Check for API connection errors
+- Test chat interface
+
+## Testing Endpoints
+
+### Chat Endpoint
+```bash
+curl -X POST http://localhost:8000/api/v1/chat/messages \
+  -H "Content-Type: application/json" \
+  -d '{"message": "How do I register for NHIF?", "language": "sw"}'
 ```
 
-### Frontend can't connect
-- Check backend is running: http://localhost:8000/health
-- Check CORS in `app/main.py` includes your frontend port
-- Check browser console (F12) for errors
-
-### Chat returns empty
-- Verify `doc_map.json` exists in backend root
-- Check backend logs for errors
-- Test API directly:
-```powershell
-curl -X POST http://localhost:8000/api/v1/chat/messages `
-  -H "Content-Type: application/json" `
-  -d '{\"message\":\"test\",\"language\":\"en\"}'
+### Admin - Upload PDF
+```bash
+curl -X POST http://localhost:8000/api/v1/admin/documents/upload-pdf \
+  -F "file=@test.pdf" \
+  -F "category=test"
 ```
 
-## 📊 Expected Output
-
-**Backend logs should show:**
-```
-INFO:     Uvicorn running on http://127.0.0.1:8000
-✓ RAG resources preloaded
-AfroKen backend startup complete
+### Admin - Scrape URL
+```bash
+curl -X POST http://localhost:8000/api/v1/admin/documents/scrape-url \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com", "category": "test"}'
 ```
 
-**Chat should:**
-- Return relevant document excerpts
-- Include citations with source URLs
-- Respond in < 1 second
+### Check Job Status
+```bash
+curl http://localhost:8000/api/v1/admin/jobs/{job_id}
+```
 
-## 🎯 Next Steps
+## Troubleshooting
 
-Once everything is running:
-1. Test various queries in the chat
-2. Check citations are accurate
-3. Monitor backend logs for any errors
-4. Review `doc_map.json` to see indexed documents
+### Server Won't Start
+1. Check Python version: `python --version` (should be 3.11+)
+2. Check dependencies: `pip list | Select-String "fastapi|pydantic|sqlmodel"`
+3. Check for port conflicts: `netstat -an | Select-String "8000"`
+
+### Database Connection Errors
+1. Verify PostgreSQL is running
+2. Check DATABASE_URL in `.env`
+3. Test connection: `psql -U afroken -d afroken_llm_db -c "SELECT 1"`
+
+### Frontend Can't Connect
+1. Check CORS settings in `app/main.py`
+2. Verify `VITE_API_BASE_URL` in frontend `.env`
+3. Check browser console for errors
+4. Verify backend is running on port 8000
+
+### RAG Not Working
+1. Check if `doc_map.json` and `faiss_index.idx` exist in backend root
+2. Check console output for RAG loading messages
+3. Verify embeddings are being generated
+
+## Database Tables
+
+See `DATABASE_TABLES.md` for complete documentation.
+
+### Key Tables:
+- **users**: User accounts
+- **conversations**: Chat sessions  
+- **messages**: Chat messages
+- **documents**: RAG documents
+- **processing_jobs**: Background jobs
+- **services**: Government services
+- **huduma_centres**: Service locations
+
+## Next Steps
+
+1. ✅ Server starts successfully
+2. ⏳ Test chat functionality
+3. ⏳ Test admin dashboard
+4. ⏳ Verify database storage
+5. ⏳ Test PDF upload
+6. ⏳ Test URL scraping
+7. ⏳ Verify frontend-backend integration
 
